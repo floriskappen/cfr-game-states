@@ -1,6 +1,10 @@
+mod proto {
+    include!("proto/build/_.rs");
+}
 pub mod structs;
 pub mod abstraction {
     pub mod action_abstraction;
+    pub mod information_abstraction;
 }
 pub mod game_states {
     pub mod kuhn_poker {
@@ -20,6 +24,8 @@ mod tests {
     mod nlth_multiplayer;
 }
 
+use dotenv::dotenv;
+
 fn main() {
-    println!("Hello, world!");
+    dotenv().ok();
 }

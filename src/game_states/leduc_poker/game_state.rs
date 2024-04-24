@@ -267,9 +267,7 @@ impl GameState for LPGameState {
 
     fn get_representation(
         &self,
-        _hand_indexer_option: Option<&HandIndexer>,
-        _abstraction_labels_per_round_option: Option<Vec<&Vec<u8>>>,
-    ) -> Option<Vec<u8>> {
+    ) -> Vec<u8> {
         let mut representation = self.private_hands[self.get_active_player_index()].clone();
 
         
@@ -287,7 +285,7 @@ impl GameState for LPGameState {
             }
         }
 
-        return Some(representation)
+        return representation
     }
 }
 

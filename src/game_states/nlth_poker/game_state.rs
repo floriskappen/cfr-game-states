@@ -1,9 +1,9 @@
-use hand_isomorphism_rust::hand_indexer::HandIndexer;
 use itertools::Itertools;
 use rand::prelude::*;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
+use crate::abstraction::information_abstraction::{HAND_INDEXER, LABELS_FLOP, LABELS_RIVER, LABELS_TURN};
 use crate::{abstraction::action_abstraction::AVAILABLE_ACTIONS, game_states::base_game_state::GameState};
 use crate::structs::{Action, BET_RAISE_ACTIONS, BET_RAISE_ALL_IN_ACTIONS};
 use super::rank::rank_hand;
@@ -336,44 +336,34 @@ impl GameState for NLTHGameState {
         return next_state;
     }
 
-    fn get_representation(
-        &self,
-        hand_indexer_option: Option<&HandIndexer>,
-        abstraction_labels_per_round_option: Option<Vec<&Vec<u8>>>,
-    ) -> Option<Vec<u8>> {
+    fn get_representation(&self) -> Vec<u8> {
         let mut active_player_hand = self.private_hands[self.active_player_index].clone();
         if self.round > ROUND_PREFLOP {
             active_player_hand.extend(self.community_cards[..2+(self.round)].to_vec());
         }
 
-        if let Some(hand_indexer) = hand_indexer_option {
-            if let Some(abstraction_labels_per_round) = abstraction_labels_per_round_option {
-                let hand_index = hand_indexer.hand_to_index(&active_player_hand);
-                let label = if self.round == 0 {
-                    hand_index as u8
-                } else  {
-                    abstraction_labels_per_round[self.round][hand_index as usize]
-                };
-
-                let mut representation = vec![label];
-        
-                for (round, round_history) in self.history.iter().enumerate() {
-                    if round <= self.round {
-                        representation.extend(
-                            round_history.iter().map(|action| action.as_value()).collect::<Vec<u8>>()
-                        )
-                    }
-                }
-        
-                return Some(representation)
-            } else {
-                log::error!("No abstraction labels passed to NLTH get_representation")
-            }
+        let hand_index = HAND_INDEXER.hand_to_index(&active_player_hand);
+        let label = if self.round == 0 {
+            hand_index as u8
+        } else if self.round == 1 {
+            LABELS_FLOP[hand_index as usize]
+        } else if self.round == 2 {
+            LABELS_TURN[hand_index as usize]
         } else {
-            log::error!("No hand indexer passed to NLTH get_representation")
+            LABELS_RIVER[hand_index as usize]
+        };
+
+        let mut representation = vec![label];
+
+        for (round, round_history) in self.history.iter().enumerate() {
+            if round <= self.round {
+                representation.extend(
+                    round_history.iter().map(|action| action.as_value()).collect::<Vec<u8>>()
+                )
+            }
         }
 
-        return None
+        return representation
     }
 }
 

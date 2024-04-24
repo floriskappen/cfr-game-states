@@ -13,6 +13,12 @@ itertools = "0.12.1"
 lazy_static = "1.4.0"
 log = "0.4.21"
 rand = "0.8.5"
+prost = "0.12.4"
+prost-types = "0.12.4"
+dotenv = "0.15.0"
+
+[build-dependencies]
+prost-build = "0.12.4"
 
 [lib]
 name = "cfr_game_states" # The name of the library
