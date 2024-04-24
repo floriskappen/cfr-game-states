@@ -1,0 +1,15 @@
+[package]
+name = "cfr-game-states"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.38"
+hand-isomorphism-rust = { path = "./lib/hand-isomorphism-rust" }
+holdem-hand-evaluator = { git = "https://github.com/b-inary/holdem-hand-evaluator" }
+itertools = "0.12.1"
+lazy_static = "1.4.0"
+log = "0.4.21"
+rand = "0.8.5"

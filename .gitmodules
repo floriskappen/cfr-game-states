@@ -1,0 +1,3 @@
+[submodule "lib/hand-isomorphism-rust"]
+	path = lib/hand-isomorphism-rust
+	url = git@github.com:floriskappen/hand-isomorphism-rust.git
