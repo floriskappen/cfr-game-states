@@ -126,6 +126,10 @@ impl GameState for NLTHGameState {
         return self.active_player_index;
     }
 
+    fn get_history(&self) -> &Vec<Vec<Action>> {
+        return &self.history;
+    }
+
     fn get_active_player_actions(&self) -> Vec<Action> {
         let pot = self.get_total_pot();
 

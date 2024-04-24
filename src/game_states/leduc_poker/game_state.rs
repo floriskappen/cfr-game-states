@@ -90,6 +90,10 @@ impl GameState for LPGameState {
         return self.player_amount;
     }
 
+    fn get_history(&self) -> &Vec<Vec<Action>> {
+        return &self.history;
+    }
+
     fn get_active_player_index(&self) -> usize {
         if self.round == POST_FLOP_INDEX {
             return (self.history[self.round].len() + 1) % 2

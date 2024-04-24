@@ -1,5 +1,4 @@
 use hand_isomorphism_rust::deck::{card_from_string, Card};
-use hand_isomorphism_rust::hand_indexer::HandIndexer;
 use rand::prelude::*;
 use lazy_static::lazy_static;
 
@@ -20,7 +19,7 @@ lazy_static! {
 pub struct KPGameState {
     pub player_amount: usize,
     pub private_hands: Vec<Card>,
-    pub history: Vec<Action>,
+    pub history: Vec<Vec<Action>>,
     pub bets: Vec<usize>
 }
 
@@ -41,7 +40,7 @@ impl GameState for KPGameState {
         return KPGameState {
             player_amount: 2,
             private_hands: vec![drawn_items[0], drawn_items[1]],
-            history: vec![],
+            history: vec![vec![]],
             bets: vec![1, 1] // Default 1$ bet
         }
     }
@@ -58,6 +57,10 @@ impl GameState for KPGameState {
         return self.player_amount;
     }
 
+    fn get_history(&self) -> &Vec<Vec<Action>> {
+        return &self.history;
+    }
+
     fn is_terminal(&self) -> bool {
         let terminal_histories = vec![
             vec![Action::Bet, Action::Fold],
@@ -67,7 +70,7 @@ impl GameState for KPGameState {
             vec![Action::Call, Action::Bet, Action::Fold],
         ];
 
-        if terminal_histories.contains(&self.history) {
+        if terminal_histories.contains(&self.history[0]) {
             return true
         }
 
@@ -77,7 +80,7 @@ impl GameState for KPGameState {
     fn get_payoffs(&self) -> Vec<i32> {
         let winning_player_identifier: usize;
 
-        if let Some((i, _)) = self.history.iter().enumerate().find(|(_, &action)| action == Action::Fold) {
+        if let Some((i, _)) = self.history[0].iter().enumerate().find(|(_, &action)| action == Action::Fold) {
             winning_player_identifier = (i+1) % 2;
         } else {
             // Showoff
@@ -96,11 +99,11 @@ impl GameState for KPGameState {
     }
 
     fn get_active_player_index(&self) -> usize {
-        return self.history.len() % 2;
+        return self.history[0].len() % 2;
     }
 
     fn get_active_player_actions(&self) -> Vec<Action> {
-        if let Some(&previous_action) = self.history.iter().rev().next() {
+        if let Some(&previous_action) = self.history[0].iter().rev().next() {
             if previous_action == Action::Bet {
                 return vec![Action::Fold, Action::Call]
             }
@@ -135,7 +138,7 @@ impl GameState for KPGameState {
             bets: new_bets,
         };
 
-        next_state.history.push(action);
+        next_state.history[0].push(action);
 
         return next_state
     }
@@ -145,7 +148,7 @@ impl GameState for KPGameState {
     ) -> Vec<u8> {
         let mut representation = vec![self.private_hands[self.get_active_player_index()].clone()];
 
-        for action in &self.history {
+        for action in &self.history[0] {
             representation.push(action.as_value());
         }
 
