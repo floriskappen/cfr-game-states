@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 
 lazy_static! {
     pub static ref BET_RAISE_ACTIONS: Vec<Action> = vec![
@@ -14,7 +15,7 @@ lazy_static! {
     };
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     Fold,
     Call,
