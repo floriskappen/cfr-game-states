@@ -3,10 +3,9 @@ use rand::prelude::*;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
-use crate::{abstraction::action_abstraction::AVAILABLE_ACTIONS, game_states::base_game_state::GameState};
-use crate::structs::{Action, ActionWithRaise, BET_RAISE_ALL_IN_ACTIONS, PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE};
+use crate::game_states::base_game_state::GameState;
+use crate::structs::{Action, ActionWithRaise};
 use super::rank::rank_hand;
-
 
 const ROUND_PREFLOP: usize = 0;
 const ROUND_FLOP: usize = 1;
@@ -133,17 +132,11 @@ impl GameState for NLTHGameState {
         false
     }
 
-    fn get_active_player_actions(&self, custom_raise_actions_option: Option<Vec<&ActionWithRaise>>) -> Vec<&ActionWithRaise> {
+    fn get_active_player_actions(&self, available_actions: Vec<&ActionWithRaise>) -> Vec<&ActionWithRaise> {
         let pot = self.get_total_pot();
 
-        let bet_raise_amount = self.history[self.round].iter().filter(|&action| BET_RAISE_ALL_IN_ACTIONS.contains(action.into_identifier().unwrap())).count();
+        let bet_raise_amount = self.history[self.round].iter().filter(|&action_with_raise| action_with_raise.is_bet_raise()).count();
 
-        let mut available_actions = AVAILABLE_ACTIONS[self.round][bet_raise_amount].iter().map(|action_identifier| {
-            return PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE.get(action_identifier).unwrap();
-        }).collect::<Vec<&ActionWithRaise>>();
-        if let Some(custom_raise_actions) = custom_raise_actions_option {
-            available_actions.extend(custom_raise_actions);
-        }
         return available_actions.iter().filter_map(|&action_with_raise| {
             if action_with_raise.action == Action::Fold {
                 return Some(action_with_raise)
