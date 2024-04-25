@@ -1,124 +1,89 @@
+use std::collections::HashMap;
+
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-lazy_static! {
-    pub static ref BET_RAISE_ACTIONS: Vec<Action> = vec![
-        Action::Bet0_25, Action::Bet0_5, Action::Bet0_75, Action::Bet1, Action::Bet1_34, Action::Bet1_5, Action::Bet2, Action::Bet4, Action::Bet7, Action::Bet8, Action::Bet10, Action::Bet13, Action::Bet15, Action::Bet25
-    ];
-}
+pub type ActionIdentifier = u8;
 
 lazy_static! {
-    pub static ref BET_RAISE_ALL_IN_ACTIONS: Vec<Action> = {
-        let mut bet_raise_actions = BET_RAISE_ACTIONS.to_vec();
-        bet_raise_actions.push(Action::AllIn);
-        return bet_raise_actions;
+
+    pub static ref PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE: HashMap<ActionIdentifier, ActionWithRaise> = {
+        let mut result = HashMap::new();
+        result.insert(52, ActionWithRaise { action: Action::Fold, raise_amount: 0 });
+        result.insert(53, ActionWithRaise { action: Action::Call, raise_amount: 0 });
+        result.insert(54, ActionWithRaise { action: Action::Bet, raise_amount: 0 });
+        result.insert(55, ActionWithRaise { action: Action::Bet, raise_amount: 25 });
+        result.insert(56, ActionWithRaise { action: Action::Bet, raise_amount: 50 });
+        result.insert(57, ActionWithRaise { action: Action::Bet, raise_amount: 75 });
+        result.insert(58, ActionWithRaise { action: Action::Bet, raise_amount: 100 });
+        result.insert(59, ActionWithRaise { action: Action::Bet, raise_amount: 134 });
+        result.insert(60, ActionWithRaise { action: Action::Bet, raise_amount: 150 });
+        result.insert(61, ActionWithRaise { action: Action::Bet, raise_amount: 200 });
+        result.insert(62, ActionWithRaise { action: Action::Bet, raise_amount: 400 });
+        result.insert(63, ActionWithRaise { action: Action::Bet, raise_amount: 700 });
+        result.insert(64, ActionWithRaise { action: Action::Bet, raise_amount: 800 });
+        // result.insert(65, ActionWithRaise { action: Action::Bet, raise_amount: 10.0 }); // 65 is skipped for some reason? fix
+        result.insert(66, ActionWithRaise { action: Action::Bet, raise_amount: 1000 });
+        result.insert(67, ActionWithRaise { action: Action::Bet, raise_amount: 1300 });
+        result.insert(68, ActionWithRaise { action: Action::Bet, raise_amount: 1500 });
+        result.insert(69, ActionWithRaise { action: Action::Bet, raise_amount: 2500 });
+        result.insert(70, ActionWithRaise { action: Action::AllIn, raise_amount: 0 });
+
+        return result;
+    };
+
+    pub static ref PREDEFINED_ACTION_WITH_RAISE_TO_ACTION_ID: HashMap<ActionWithRaise, ActionIdentifier> = {
+        return PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE.iter()
+            .map(|(&id, action_with_raise)| (action_with_raise.clone(), id))
+            .collect();
+    };
+
+    pub static ref BET_RAISE_ALL_IN_ACTIONS: Vec<ActionIdentifier> = {
+        let mut result = BET_RAISE_ACTIONS.clone();
+        result.push(PREDEFINED_ACTION_WITH_RAISE_TO_ACTION_ID.get(&ActionWithRaise { action: Action::AllIn, raise_amount: 0 }).unwrap().clone());
+        return result;
     };
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     Fold,
     Call,
     Bet,
-    Bet0_25,
-    Bet0_5,
-    Bet0_75,
-    Bet1,
-    Bet1_34,
-    Bet1_5,
-    Bet2,
-    Bet4,
-    Bet7,
-    Bet8,
-    Bet10,
-    Bet13,
-    Bet15,
-    Bet25,
     AllIn,
 }
-impl Action {
+
+#[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ActionWithRaise {
+    pub action: Action,
+    pub raise_amount: u16
+}
+
+impl ActionWithRaise {
     pub fn as_string(&self) -> String {
-        return format!("{:?}", self)
-    }
-
-    pub fn as_string_value(&self) -> String {
-        return format!("{:?}", self.as_value())
-    }
-
-    pub fn as_value(&self) -> u8 {
-        match self {
-            Action::Fold    => 52,
-            Action::Call    => 53,
-            Action::Bet     => 54,
-            Action::Bet0_25 => 55,
-            Action::Bet0_5  => 56,
-            Action::Bet0_75 => 57,
-            Action::Bet1    => 58,
-            Action::Bet1_34 => 59,
-            Action::Bet1_5  => 60,
-            Action::Bet2    => 61,
-            Action::Bet4    => 62,
-            Action::Bet7    => 63,
-            Action::Bet8    => 64,
-            Action::Bet10   => 66,
-            Action::Bet13   => 67,
-            Action::Bet15   => 68,
-            Action::Bet25   => 69,
-            Action::AllIn   => 70,
+        if self.raise_amount != 0 {
+            return format!("{:?} x{}", self.action, self.raise_amount)
         }
+        return format!("{:?}", self.action)
     }
+    pub fn get_multiplier(&self) -> f32 {
+        return self.raise_amount as f32 / 100.0
+    }
+
     pub fn from_string(value: &str) -> Option<Self> {
-        if let Ok(value_u8) = value.parse::<u8>() {
-            return Action::from_value(value_u8);
+        if let Ok(value_u8) = value.parse::<ActionIdentifier>() {
+            if let Some(action_with_raise) = PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE.get(&value_u8) {
+                return Some(action_with_raise.clone());
+            }
         }
         return None;
     }
 
-    pub fn from_value(value: u8) -> Option<Self> {
-        match value {
-            52 => Some(Action::Fold),
-            53 => Some(Action::Call),
-            54 => Some(Action::Bet),
-            55 => Some(Action::Bet0_25),
-            56 => Some(Action::Bet0_5),
-            57 => Some(Action::Bet0_75),
-            58 => Some(Action::Bet1),
-            59 => Some(Action::Bet1_34),
-            60 => Some(Action::Bet1_5),
-            61 => Some(Action::Bet2),
-            62 => Some(Action::Bet4),
-            63 => Some(Action::Bet7),
-            64 => Some(Action::Bet8),
-            66 => Some(Action::Bet10),
-            67 => Some(Action::Bet13),
-            68 => Some(Action::Bet15),
-            69 => Some(Action::Bet25),
-            70 => Some(Action::AllIn),
-            _ => None
-        }
+    pub fn into_identifier(&self) -> Option<&ActionIdentifier> {
+        return PREDEFINED_ACTION_WITH_RAISE_TO_ACTION_ID.get(&self)
     }
 
-    pub fn get_max_existing_action_value() -> u8 {
-        return 70;
-    }
-
-    pub fn get_pot_multiplier(&self) -> f32 {
-        match self {
-            Action::Bet0_25 => 0.25,
-            Action::Bet0_5 => 0.5,
-            Action::Bet0_75 => 0.75,
-            Action::Bet1 => 1.0,
-            Action::Bet1_34 => 1.34,
-            Action::Bet1_5 => 1.5,
-            Action::Bet2 => 2.0,
-            Action::Bet4 => 4.0,
-            Action::Bet7 => 7.0,
-            Action::Bet8 => 8.0,
-            Action::Bet10 => 10.0,
-            Action::Bet13 => 13.0,
-            Action::Bet15 => 15.0,
-            Action::Bet25 => 25.0,
-            _ => 0.0
-        }
+    pub fn is_bet_raise(&self) -> bool {
+        return self.raise_amount > 0;
     }
 }

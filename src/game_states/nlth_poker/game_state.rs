@@ -4,7 +4,7 @@ use rand::prelude::*;
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
 use crate::{abstraction::action_abstraction::AVAILABLE_ACTIONS, game_states::base_game_state::GameState};
-use crate::structs::{Action, BET_RAISE_ACTIONS, BET_RAISE_ALL_IN_ACTIONS};
+use crate::structs::{Action, ActionWithRaise, BET_RAISE_ALL_IN_ACTIONS, PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE};
 use super::rank::rank_hand;
 
 
@@ -28,7 +28,7 @@ pub struct NLTHGameState {
     pub bets: Vec<Vec<usize>>,
 
     pub previous_raise_amount: usize,
-    pub history: Vec<Vec<Action>>,
+    pub history: Vec<Vec<ActionWithRaise>>,
     pub active_player_index: usize,
     pub folded_players: Vec<bool>,
     pub all_in_players: Vec<i32>,
@@ -125,7 +125,7 @@ impl GameState for NLTHGameState {
         return self.active_player_index;
     }
 
-    fn get_history(&self) -> &Vec<Vec<Action>> {
+    fn get_history(&self) -> &Vec<Vec<ActionWithRaise>> {
         return &self.history;
     }
 
@@ -133,37 +133,43 @@ impl GameState for NLTHGameState {
         false
     }
 
-    fn get_active_player_actions(&self) -> Vec<Action> {
+    fn get_active_player_actions(&self, custom_raise_actions_option: Option<Vec<&ActionWithRaise>>) -> Vec<&ActionWithRaise> {
         let pot = self.get_total_pot();
 
-        let bet_raise_amount = self.history[self.round].iter().filter(|&action| BET_RAISE_ALL_IN_ACTIONS.contains(action)).count();
+        let bet_raise_amount = self.history[self.round].iter().filter(|&action| BET_RAISE_ALL_IN_ACTIONS.contains(action.into_identifier().unwrap())).count();
 
-        return AVAILABLE_ACTIONS[self.round][bet_raise_amount].iter().cloned().filter(|action| {
-            if action == &Action::Fold {
-                return true
+        let mut available_actions = AVAILABLE_ACTIONS[self.round][bet_raise_amount].iter().map(|action_identifier| {
+            return PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE.get(action_identifier).unwrap();
+        }).collect::<Vec<&ActionWithRaise>>();
+        if let Some(custom_raise_actions) = custom_raise_actions_option {
+            available_actions.extend(custom_raise_actions);
+        }
+        return available_actions.iter().filter_map(|&action_with_raise| {
+            if action_with_raise.action == Action::Fold {
+                return Some(action_with_raise)
             };
 
             // We should be able to afford it
             let previous_bet_cover_cost = self.get_call_amount();
 
 
-            if action == &Action::Call {
+            if action_with_raise.action == Action::Call {
                 // We need to have chips left after calling, otherwise it would be an all-in
                 if self.stacks[self.active_player_index] as i32 - previous_bet_cover_cost as i32 > 0 {
-                    return true
+                    return Some(action_with_raise)
                 }
-                return false
+                return None
             };
 
-            if action == &Action::AllIn {
+            if action_with_raise.action == Action::AllIn {
                 if self.stacks[self.active_player_index] as i32 - previous_bet_cover_cost as i32 >= 0 {
-                    return true
+                    return Some(action_with_raise)
                 }
-                return false
+                return None
             };
 
             // ...and if it's a bet action, it has to be equal or more than the previous raise amount
-            let raise_amount = (pot as f32 * action.get_pot_multiplier()) as usize;
+            let raise_amount = (pot as f32 * action_with_raise.get_multiplier()) as usize;
             let is_more_or_equal_previous_raise_amount = if raise_amount == 0 {
                 true
             } else {
@@ -174,8 +180,12 @@ impl GameState for NLTHGameState {
 
             let can_afford = self.stacks[self.active_player_index] as i32 - total_cost as i32 >= 0;
 
-            return is_more_or_equal_previous_raise_amount && can_afford;
-        }).collect::<Vec<Action>>();
+            if is_more_or_equal_previous_raise_amount && can_afford {
+                return Some(action_with_raise)
+            }
+
+            return None
+        }).collect::<Vec<&ActionWithRaise>>();
     }
 
     fn is_terminal(&self) -> bool {
@@ -282,10 +292,10 @@ impl GameState for NLTHGameState {
         return false;
     }
 
-    fn handle_action(&self, action: Action) -> Self {
+    fn handle_action(&self, action_with_raise: ActionWithRaise) -> Self {
         let mut next_state = self.clone();
 
-        if action == Action::Fold {
+        if action_with_raise.action == Action::Fold {
             next_state.folded_players[next_state.active_player_index] = true;
 
             // The player becomes inactive from this point on
@@ -293,12 +303,12 @@ impl GameState for NLTHGameState {
         } else {
             let mut bet_increase_amount = next_state.get_call_amount();
 
-            if BET_RAISE_ACTIONS.contains(&action) {
+            if action_with_raise.is_bet_raise() {
                 let current_pot = next_state.get_total_pot();
-                let new_raise_amount = (current_pot as f32 * action.get_pot_multiplier()).round() as usize;
+                let new_raise_amount = (current_pot as f32 * action_with_raise.get_multiplier()).round() as usize;
                 bet_increase_amount += new_raise_amount;
                 next_state.previous_raise_amount = new_raise_amount;
-            } else if action == Action::AllIn {
+            } else if action_with_raise.action == Action::AllIn {
                 // Everything left in the player's stack
                 let new_raise_amount = next_state.stacks[next_state.active_player_index] - bet_increase_amount;
                 bet_increase_amount += new_raise_amount;
@@ -317,12 +327,12 @@ impl GameState for NLTHGameState {
             next_state.pots[pot_amount-1][next_state.active_player_index] += bet_increase_amount;
 
             // If the action was an all-in, we create a new pot
-            if action == Action::AllIn {
+            if action_with_raise.action == Action::AllIn {
                 next_state.pots.push(vec![0; next_state.player_amount])
             }
         }
 
-        next_state.history[next_state.round].push(action);
+        next_state.history[next_state.round].push(action_with_raise);
 
         // Set the new active player index
         let mut current_new_active_player_index = (next_state.active_player_index + 1) % next_state.player_amount;
@@ -374,22 +384,22 @@ impl NLTHGameState {
     // - Bet, Fold, Raise, Call, Call, Call -> False
     // - Check, Check, Bet, Call, Fold, Fold, Fold, Call -> False
     pub fn all_remaining_players_checked(&self) -> bool {
-        let num_checked = self.history[self.round].iter().filter(|&action| action == &Action::Call).count();
+        let num_checked = self.history[self.round].iter().filter(|&action_with_raise| action_with_raise.action == Action::Call).count();
 
         return num_checked == self.active_player_amount &&
-            !self.history[self.round].iter().any(|action| BET_RAISE_ACTIONS.contains(action))
+            !self.history[self.round].iter().any(|action_with_raise| action_with_raise.is_bet_raise())
     }
 
     // Determines if the current betting round is finished, i.e., a bet or raise has been called or everyone has folded.
     fn bet_or_raise_finished(&self) -> bool {
         for i in 0..self.history[self.round].len() {
             let reversed_index = self.history[self.round].len() - 1 - i;
-            let reversed_action = &self.history[self.round][reversed_index];
+            let reversed_action_with_raise = &self.history[self.round][reversed_index];
 
-            if BET_RAISE_ACTIONS.contains(reversed_action) {
+            if reversed_action_with_raise.is_bet_raise() {
                 if self.history[self.round][reversed_index..]
                     .iter()
-                    .filter(|&action| action != &Action::Fold) // Exclude fold actions as they have impact on active_player_amount
+                    .filter(|&action_with_raise| action_with_raise.action != Action::Fold) // Exclude fold actions as they have impact on active_player_amount
                     .count() == self.active_player_amount
                 {
                     return true
@@ -397,11 +407,11 @@ impl NLTHGameState {
                 break
             }
 
-            if reversed_action == &Action::AllIn {
+            if reversed_action_with_raise.action == Action::AllIn {
                 // When someone went all-in the active player amount is reduced by 1 so we need to check if it is bigger
                 if self.history[self.round][reversed_index..]
                     .iter()
-                    .filter(|&action| action != &Action::Fold) // Exclude fold actions as they have impact on active_player_amount
+                    .filter(|&action_with_raise| action_with_raise.action != Action::Fold) // Exclude fold actions as they have impact on active_player_amount
                     .count() > self.active_player_amount
                 {
                     return true
