@@ -41,10 +41,33 @@ lazy_static! {
 
 #[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ActionType {
+    #[serde(rename(serialize = "fold"))]
     Fold,
+    #[serde(rename(serialize = "call"))]
     Call,
+    #[serde(rename(serialize = "bet"))]
     Bet,
+    #[serde(rename(serialize = "all_in"))]
     AllIn,
+}
+impl ActionType {
+    pub fn from_string(action_type_string: &str) -> Option<Self> {
+        match action_type_string {
+            "fold"      => return Some(ActionType::Fold),
+            "call"      => return Some(ActionType::Call),
+            "bet"       => return Some(ActionType::Bet),
+            "all_in"    => return Some(ActionType::AllIn),
+            _ => return None
+        };
+    }
+    pub fn to_string(&self) -> String {
+        match self {
+            ActionType::Fold        => "fold".to_owned(),
+            ActionType::Call        => "call".to_owned(),
+            ActionType::Bet         => "bet".to_owned(),
+            ActionType::AllIn       => "all_in".to_owned(),
+        }
+    }
 }
 
 #[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
