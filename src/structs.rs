@@ -41,6 +41,10 @@ impl Action {
         return format!("{:?}", self)
     }
 
+    pub fn as_string_value(&self) -> String {
+        return format!("{:?}", self.as_value())
+    }
+
     pub fn as_value(&self) -> u8 {
         match self {
             Action::Fold    => 52,
