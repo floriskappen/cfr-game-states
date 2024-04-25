@@ -2,7 +2,7 @@ use hand_isomorphism_rust::deck::{card_from_string, Card};
 use rand::prelude::*;
 use lazy_static::lazy_static;
 
-use crate::{game_states::base_game_state::GameState, structs::{ActionType, ActionWithRaise}};
+use crate::{game_states::base_game_state::GameState, structs::{ActionType, Action}};
 
 lazy_static! {
     static ref DECK: [Card; 3] = {
@@ -18,7 +18,7 @@ lazy_static! {
 pub struct KPGameState {
     pub player_amount: usize,
     pub private_hands: Vec<Card>,
-    pub history: Vec<Vec<ActionWithRaise>>,
+    pub history: Vec<Vec<Action>>,
     pub bets: Vec<usize>
 }
 
@@ -56,7 +56,7 @@ impl GameState for KPGameState {
         return self.player_amount;
     }
 
-    fn get_history(&self) -> &Vec<Vec<ActionWithRaise>> {
+    fn get_history(&self) -> &Vec<Vec<Action>> {
         return &self.history;
     }
 
@@ -66,16 +66,16 @@ impl GameState for KPGameState {
     }
 
     fn get_current_round_bet_raise_amount(&self) -> usize {
-        return self.history[0].iter().filter(|action_with_raise| action_with_raise.action_type == ActionType::Bet).count();
+        return self.history[0].iter().filter(|action| action.action_type == ActionType::Bet).count();
     }
 
     fn is_terminal(&self) -> bool {
         let terminal_histories = vec![
-            vec![ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }, ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }],
-            vec![ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }],
-            vec![ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }],
-            vec![ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }],
-            vec![ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }, ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Fold, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Fold, raise_amount: 0 }],
         ];
 
         if terminal_histories.contains(&self.history[0]) {
@@ -88,7 +88,7 @@ impl GameState for KPGameState {
     fn get_payoffs(&self) -> Vec<i32> {
         let winning_player_identifier: usize;
 
-        if let Some((i, _)) = self.history[0].iter().enumerate().find(|(_, &action)| action == ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }) {
+        if let Some((i, _)) = self.history[0].iter().enumerate().find(|(_, &action)| action == Action { action_type: ActionType::Fold, raise_amount: 0 }) {
             winning_player_identifier = (i+1) % 2;
         } else {
             // Showoff
@@ -110,14 +110,14 @@ impl GameState for KPGameState {
         return self.history[0].len() % 2;
     }
 
-    fn get_active_player_actions(&self, _available_actions: &Vec<ActionWithRaise>) -> Vec<ActionWithRaise> {
+    fn get_active_player_actions(&self, _available_actions: &Vec<Action>) -> Vec<Action> {
         if let Some(&previous_action) = self.history[0].iter().rev().next() {
             if previous_action.action_type == ActionType::Bet {
-                return vec![ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }]
+                return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]
             }
         }
 
-        return vec![ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }]
+        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }]
     }
 
     fn can_proceed_to_next_round(&self) -> bool {
@@ -125,7 +125,7 @@ impl GameState for KPGameState {
         return false;
     }
 
-    fn handle_action(&self, action: ActionWithRaise) -> Self {
+    fn handle_action(&self, action: Action) -> Self {
         let mut new_bets = self.bets.clone();
 
         let active_player_index = self.get_active_player_index();

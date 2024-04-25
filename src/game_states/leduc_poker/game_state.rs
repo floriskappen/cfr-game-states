@@ -12,7 +12,7 @@ use rand::prelude::*;
 
 use crate::game_states::base_game_state::GameState;
 use crate::structs::ActionType;
-use crate::structs::ActionWithRaise;
+use crate::structs::Action;
 
 lazy_static! {
     static ref CARD_RANKS: HashMap<String, i32> = {
@@ -52,7 +52,7 @@ pub struct LPGameState {
     pub community_cards: Vec<Card>,
     pub bets: Vec<Vec<u16>>,
 
-    pub history: Vec<Vec<ActionWithRaise>>,
+    pub history: Vec<Vec<Action>>,
     pub folded_players: Vec<u8>,
 }
 
@@ -100,7 +100,7 @@ impl GameState for LPGameState {
         return 2;
     }
 
-    fn get_history(&self) -> &Vec<Vec<ActionWithRaise>> {
+    fn get_history(&self) -> &Vec<Vec<Action>> {
         return &self.history;
     }
 
@@ -113,30 +113,30 @@ impl GameState for LPGameState {
     }
 
     fn get_current_round_bet_raise_amount(&self) -> usize {
-        return self.history[self.round].iter().filter(|&action_with_raise| action_with_raise.is_bet_raise()).count();
+        return self.history[self.round].iter().filter(|&action| action.is_bet_raise()).count();
     }
 
-    fn get_active_player_actions(&self, _available_actions: &Vec<ActionWithRaise>) -> Vec<ActionWithRaise> {
+    fn get_active_player_actions(&self, _available_actions: &Vec<Action>) -> Vec<Action> {
         let bet_raise_amount = self.get_current_round_bet_raise_amount();
 
         // If there was a bet this round
         if bet_raise_amount > 0 {            
             // If there were less than 2 raises we can still raise more
             if bet_raise_amount < 2 {
-                return vec![ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }]
+                return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }]
             }
 
-            return vec![ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }]
+            return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]
         }
 
-        return vec![ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 }];
+        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }];
     }
 
     fn is_terminal(&self) -> bool {
         // If anyone folded at any point, it's terminal
         if self.history.iter()
             .map(|round_history| {
-                if round_history.iter().contains(&ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }) {
+                if round_history.iter().contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }) {
                     return true
                 }
                 return false
@@ -170,7 +170,7 @@ impl GameState for LPGameState {
 
     fn get_payoffs(&self) -> Vec<i32> {
         // All but 1 folded
-        if self.history.concat().contains(&ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }) {
+        if self.history.concat().contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }) {
             let mut folded_player_index: usize = usize::MIN;
             for i in 0..self.history.len() {
                 for (j, action) in self.history[i].iter().enumerate() {
@@ -247,18 +247,18 @@ impl GameState for LPGameState {
         return payoffs;
     }
 
-    fn handle_action(&self, action_with_raise: ActionWithRaise) -> Self {
+    fn handle_action(&self, action: Action) -> Self {
         let mut new_bets = self.bets.clone();
         let active_player_index = self.get_active_player_index();
 
         let active_player_current_round_bet = self.bets[self.round][active_player_index];
         let opponent_current_round_bet = self.bets[self.round][(active_player_index + 1) % 2];
 
-        if action_with_raise.action_type != ActionType::Fold {
+        if action.action_type != ActionType::Fold {
             // Always match the opponent bet first
             let mut bet_increase_amount = opponent_current_round_bet - active_player_current_round_bet;
     
-            if action_with_raise.action_type == ActionType::Bet {
+            if action.action_type == ActionType::Bet {
                 let mut raise_amount = 2;
                 if self.round == 1 {
                     raise_amount = 4;
@@ -279,7 +279,7 @@ impl GameState for LPGameState {
             community_cards: self.community_cards.clone(),
             folded_players: self.folded_players.clone()
         };
-        next_state.history[next_state.round].push(action_with_raise);
+        next_state.history[next_state.round].push(action);
 
         if next_state.can_proceed_to_next_round() {
             next_state.round = 1;
@@ -292,9 +292,9 @@ impl GameState for LPGameState {
 impl LPGameState {
     // Returns True if all players checked in the current round
     fn all_players_checked(&self) -> bool {
-        let num_checked = self.history[self.round].iter().filter(|&action| action == &ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }).count();
+        let num_checked = self.history[self.round].iter().filter(|&action| action == &Action { action_type: ActionType::Call, raise_amount: 0 }).count();
 
-        return num_checked == self.player_amount && !self.history[self.round].iter().any(|action| action == &ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1 })
+        return num_checked == self.player_amount && !self.history[self.round].iter().any(|action| action == &Action { action_type: ActionType::Bet, raise_amount: 1 })
     }
 
     // Determines if the current betting round is finished, i.e., a bet or raise has been called or everyone has folded.

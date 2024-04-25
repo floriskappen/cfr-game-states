@@ -5,7 +5,7 @@ mod poker_tests_headsup {
     
     use crate::game_states::base_game_state::GameState;
     use crate::game_states::nlth_poker::game_state::NLTHGameState;
-    use crate::structs::{ActionType, ActionWithRaise};
+    use crate::structs::{ActionType, Action};
     use crate::tests::action_abstraction::AVAILABLE_ACTIONS;
 
     // Helper function to create a standardized game state
@@ -28,10 +28,10 @@ mod poker_tests_headsup {
     fn test_pre_flop_folding() {
         let mut game_state = setup_game_state();
         let available_actions = &AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount()];
-        assert_eq!(game_state.get_active_player_actions(&available_actions).contains(&ActionWithRaise { action_type: ActionType::Bet, raise_amount: 400 }), true);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 25 });
-        assert_eq!(game_state.get_active_player_actions(available_actions).contains(&ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }), true);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 });
+        assert_eq!(game_state.get_active_player_actions(&available_actions).contains(&Action { action_type: ActionType::Bet, raise_amount: 400 }), true);
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 25 });
+        assert_eq!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }), true);
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), true);
         let payoffs = game_state.get_payoffs();
         assert_eq!(payoffs[0] > 0, true); // Assuming player 1 is the one who folded
@@ -41,40 +41,40 @@ mod poker_tests_headsup {
     fn test_pre_flop_calling() {
         let mut game_state = setup_game_state();
         let available_actions = &AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount()];
-        assert!(game_state.get_active_player_actions(available_actions).contains(&ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }));
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // Player 1 calls
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // Player 2 calls
+        assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Call, raise_amount: 0 }));
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player 1 calls
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player 2 calls
         assert_eq!(game_state.is_terminal(), false); // Should not be terminal yet
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // Move to next round
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Move to next round
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), false);
     }
 
     #[test]
     fn test_preflop_raise_reraise_and_call() {
         let mut game_state = setup_game_state();
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 400 }); // Player B re-raises (3-bet)
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // Player A calls
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 400 }); // Player B re-raises (3-bet)
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player A calls
         assert_eq!(game_state.is_terminal(), false);
     }
 
     #[test]
     fn test_preflop_raise_allin_and_fold() {
         let mut game_state = setup_game_state();
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 }); // Player B goes all-in
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 }); // Player B goes all-in
         assert_eq!(game_state.is_terminal(), false);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }); // Player A folds
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 }); // Player A folds
         assert_eq!(game_state.is_terminal(), true);
     }
 
     #[test]
     fn test_preflop_raise_allin_and_call() {
         let mut game_state = setup_game_state();
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 }); // Player B goes all-in
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 }); // Player A calls with their own all-in
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 }); // Player B goes all-in
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 }); // Player A calls with their own all-in
         assert_eq!(game_state.is_terminal(), true);
     }
 
@@ -82,9 +82,9 @@ mod poker_tests_headsup {
     fn test_all_in_and_fold() {
         let mut game_state = setup_game_state();
         let available_actions = &AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount()];
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 });
-        assert!(game_state.get_active_player_actions(available_actions).contains(&ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 }));
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
+        assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }));
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), true);
         let payoffs = game_state.get_payoffs();
         assert_eq!(payoffs[0] > 0, true);
@@ -94,17 +94,17 @@ mod poker_tests_headsup {
     fn test_multiple_betting_rounds() {
         let mut game_state = setup_game_state();
         // Initial bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 200 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         // Flop bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 100 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         // Turn bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 50 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 50 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         // River bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 100 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), true);
         assert!(game_state.get_payoffs().iter().any(|&x| x > 0));
     }
@@ -117,30 +117,30 @@ mod poker_tests_headsup {
         // Player 1 acts first after blinds, betting 1.5x the current pot.
         // Also account for the call of the big blind, so 50 will be added to the pot apart from the bet
         let bet_size = (1.5 * initial_pot as f64) as usize;
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 150 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 150 });
         assert_eq!(game_state.stacks[0], 9900 /* 9950 minus 50 for the call */ - bet_size);
         assert_eq!(game_state.get_total_pot(), initial_pot + 50 + bet_size);
 
         // Player 2 responds with a call
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         assert_eq!(game_state.stacks[1], 9900 - bet_size);
         assert_eq!(game_state.get_total_pot(), initial_pot + 50 + 2 * bet_size);
 
         // Moving to the next betting round, Player 2 is FTA and decides to bet 1x the new pot size
         let new_pot = game_state.get_total_pot();
         let new_bet_size = new_pot; // 1x the pot
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
         assert_eq!(game_state.stacks[1], 9900 - bet_size - new_bet_size);
         assert_eq!(game_state.get_total_pot(), new_pot + new_bet_size);
 
         // Player 1 goes all-in, which is less than a normal Bet1 due to previous betting
         let all_in_amount = game_state.stacks[0]; // All remaining stack
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
         assert_eq!(game_state.stacks[0], 0);
         assert_eq!(game_state.get_total_pot(), new_pot + new_bet_size + all_in_amount);
 
         // Player 2 also goes all-in
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
         assert_eq!(game_state.get_total_pot(), 20000);
 
         // Verify game ends
@@ -153,34 +153,34 @@ mod poker_tests_headsup {
         // Preflop
         // SB (player 0) starts
         assert_eq!(game_state.active_player_index, 0);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });  // SB calls
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });  // SB calls
         // BB (player 1) acts
         assert_eq!(game_state.active_player_index, 1);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
 
         // Move to flop
         // Postflop, BB (player 1) starts
         assert_eq!(game_state.active_player_index, 1);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
         // SB (player 0) acts
         assert_eq!(game_state.active_player_index, 0);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // SB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // SB checks
 
         // Move to turn
         // Turn, BB (player 1) starts
         assert_eq!(game_state.active_player_index, 1);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
         // SB (player 0) acts
         assert_eq!(game_state.active_player_index, 0);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // SB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // SB checks
 
         // Move to river
         // River, BB (player 1) starts
         assert_eq!(game_state.active_player_index, 1);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // BB checks
         // SB (player 0) acts
         assert_eq!(game_state.active_player_index, 0);
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 }); // SB checks
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // SB checks
 
         assert_eq!(game_state.is_terminal(), true); // Game should be terminal
     }
@@ -189,17 +189,17 @@ mod poker_tests_headsup {
     fn test_payoffs() {
         let mut game_state = setup_game_state();
         // Initial bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 200 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         // Flop bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 100 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         // Turn bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 50 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 50 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         // // River bets
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Bet, raise_amount: 100 });
-        game_state = game_state.handle_action(ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), true);
 
         assert_eq!(game_state.get_payoffs(), vec![7200, -7200]);
