@@ -143,10 +143,10 @@ impl GameState for NLTHGameState {
         1 => Until the second round starts
         2 => Until the third round starts or until a second raise action 
     */
-    fn is_leaf_node(&self, subgame_end_situation: usize) -> bool {
-        if subgame_end_situation == 1 && self.round > 0 {
+    fn is_leaf_node(&self, leaf_node_placement: usize) -> bool {
+        if leaf_node_placement == 1 && self.round > 0 {
             return true;
-        } else if subgame_end_situation == 2 && (
+        } else if leaf_node_placement == 2 && (
             self.round > 2 || self.get_current_round_bet_raise_amount() > 1
         ) {
             return true;
