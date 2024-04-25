@@ -279,29 +279,6 @@ impl GameState for LPGameState {
 
         return next_state;
     }
-
-    fn get_representation(
-        &self,
-    ) -> Vec<u8> {
-        let mut representation = self.private_hands[self.get_active_player_index()].clone();
-
-        
-        if self.round == POST_FLOP_INDEX {
-            representation.extend(self.community_cards.clone());
-        }
-
-        for action in &self.history[PRE_FLOP_INDEX] {
-            representation.push(action.as_value());
-        }
-
-        if self.round == POST_FLOP_INDEX {
-            for action in &self.history[POST_FLOP_INDEX] {
-                representation.push(action.as_value());
-            }
-        }
-
-        return representation
-    }
 }
 
 impl LPGameState {

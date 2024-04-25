@@ -3,7 +3,6 @@ use rand::prelude::*;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
-use crate::abstraction::information_abstraction::{HAND_INDEXER, LABELS_FLOP, LABELS_RIVER, LABELS_TURN};
 use crate::{abstraction::action_abstraction::AVAILABLE_ACTIONS, game_states::base_game_state::GameState};
 use crate::structs::{Action, BET_RAISE_ACTIONS, BET_RAISE_ALL_IN_ACTIONS};
 use super::rank::rank_hand;
@@ -350,36 +349,6 @@ impl GameState for NLTHGameState {
         }
 
         return next_state;
-    }
-
-    fn get_representation(&self) -> Vec<u8> {
-        let mut active_player_hand = self.private_hands[self.active_player_index].clone();
-        if self.round > ROUND_PREFLOP {
-            active_player_hand.extend(self.community_cards[..2+(self.round)].to_vec());
-        }
-
-        let hand_index = HAND_INDEXER.hand_to_index(&active_player_hand);
-        let label = if self.round == 0 {
-            hand_index as u8
-        } else if self.round == 1 {
-            LABELS_FLOP[hand_index as usize]
-        } else if self.round == 2 {
-            LABELS_TURN[hand_index as usize]
-        } else {
-            LABELS_RIVER[hand_index as usize]
-        };
-
-        let mut representation = vec![label];
-
-        for (round, round_history) in self.history.iter().enumerate() {
-            if round <= self.round {
-                representation.extend(
-                    round_history.iter().map(|action| action.as_value()).collect::<Vec<u8>>()
-                )
-            }
-        }
-
-        return representation
     }
 }
 

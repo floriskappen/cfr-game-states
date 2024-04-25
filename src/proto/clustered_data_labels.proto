@@ -1,5 +1,0 @@
-syntax = "proto3";
-
-message ClusteredDataLabels {
-    repeated uint32 data = 1;
-}

@@ -14,5 +14,4 @@ pub trait GameState {
     fn get_active_player_actions(&self) -> Vec<Action>;
     fn handle_action(&self, action: Action) -> Self;
     fn can_proceed_to_next_round(&self) -> bool;
-    fn get_representation(&self) -> Vec<u8>;
 }

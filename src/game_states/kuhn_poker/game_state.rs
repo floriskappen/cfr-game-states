@@ -152,16 +152,4 @@ impl GameState for KPGameState {
 
         return next_state
     }
-
-    fn get_representation(
-        &self,
-    ) -> Vec<u8> {
-        let mut representation = vec![self.private_hands[self.get_active_player_index()].clone()];
-
-        for action in &self.history[0] {
-            representation.push(action.as_value());
-        }
-
-        return representation
-    }
 }
