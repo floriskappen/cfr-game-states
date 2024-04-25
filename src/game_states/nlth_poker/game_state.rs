@@ -130,6 +130,10 @@ impl GameState for NLTHGameState {
         return &self.history;
     }
 
+    fn is_leaf_node(&self, subgame_end_situation: usize) -> bool {
+        false
+    }
+
     fn get_active_player_actions(&self) -> Vec<Action> {
         let pot = self.get_total_pot();
 
@@ -271,6 +275,14 @@ impl GameState for NLTHGameState {
         return payoffs;
     }
 
+    fn can_proceed_to_next_round(&self) -> bool {
+        if self.round < ROUND_RIVER && self.active_player_amount > 1 && (self.all_remaining_players_checked() || self.bet_or_raise_finished()) {
+            return true;
+        }
+
+        return false;
+    }
+
     fn handle_action(&self, action: Action) -> Self {
         let mut next_state = self.clone();
 
@@ -324,7 +336,7 @@ impl GameState for NLTHGameState {
             current_new_active_player_index = (current_new_active_player_index + 1) % next_state.player_amount;
         }
 
-        if next_state.round < ROUND_RIVER && next_state.active_player_amount > 1 && (next_state.all_remaining_players_checked() || next_state.bet_or_raise_finished()) {
+        if next_state.can_proceed_to_next_round() {
             // Transition to next round
             next_state.round += 1;
             next_state.previous_raise_amount = BIG_BLIND;

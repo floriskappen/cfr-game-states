@@ -94,6 +94,11 @@ impl GameState for LPGameState {
         return &self.history;
     }
 
+    fn is_leaf_node(&self, _subgame_end_situation: usize) -> bool {
+        // There are never leaf nodes in Leduc Poker
+        return false;
+    }
+
     fn get_active_player_index(&self) -> usize {
         if self.round == POST_FLOP_INDEX {
             return (self.history[self.round].len() + 1) % 2
@@ -225,6 +230,15 @@ impl GameState for LPGameState {
         return payoffs
     }
 
+    fn can_proceed_to_next_round(&self) -> bool {
+        if self.round == PRE_FLOP_INDEX {
+            if self.all_players_checked() || self.bet_or_raise_finished() {
+                return true
+            }
+        }
+
+        return false
+    }
 
     fn handle_action(&self, action: Action) -> Self {
         let mut new_bets = self.bets.clone();
@@ -259,14 +273,11 @@ impl GameState for LPGameState {
         };
         next_state.history[next_state.round].push(action);
 
-        if next_state.round == PRE_FLOP_INDEX {
-            // Transition to post-flop is necessary
-            if next_state.all_players_checked() || next_state.bet_or_raise_finished() {
-                next_state.round = POST_FLOP_INDEX
-            }
+        if next_state.can_proceed_to_next_round() {
+            next_state.round = POST_FLOP_INDEX
         }
 
-        return next_state
+        return next_state;
     }
 
     fn get_representation(

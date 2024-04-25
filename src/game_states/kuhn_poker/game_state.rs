@@ -61,6 +61,11 @@ impl GameState for KPGameState {
         return &self.history;
     }
 
+    fn is_leaf_node(&self, _subgame_end_situation: usize) -> bool {
+        // There are never leaf nodes in Kuhn Poker
+        return false;
+    }
+
     fn is_terminal(&self) -> bool {
         let terminal_histories = vec![
             vec![Action::Bet, Action::Fold],
@@ -110,6 +115,11 @@ impl GameState for KPGameState {
         }
 
         return vec![Action::Call, Action::Bet]
+    }
+
+    fn can_proceed_to_next_round(&self) -> bool {
+        // There is only 1 round in Kuhn Poker
+        return false;
     }
 
     fn handle_action(&self, action: Action) -> Self {
