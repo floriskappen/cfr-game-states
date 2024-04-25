@@ -1,9 +1,14 @@
 use std::collections::HashMap;
-use hand_isomorphism_rust::deck::{card_from_string, card_to_string, deck_get_rank, Card};
-use hand_isomorphism_rust::hand_indexer::HandIndexer;
+use std::fmt::Debug;
+
+use hand_isomorphism_rust::deck::card_from_string;
+use hand_isomorphism_rust::deck::card_to_string;
+use hand_isomorphism_rust::deck::deck_get_rank;
+use hand_isomorphism_rust::deck::Card;
 use itertools::Itertools;
-use rand::prelude::*;
 use lazy_static::lazy_static;
+use rand::rngs::StdRng;
+use rand::prelude::*;
 
 use crate::game_states::base_game_state::GameState;
 use crate::structs::Action;
@@ -39,12 +44,15 @@ lazy_static! {
 
 #[derive(Clone, Debug)]
 pub struct LPGameState {
-    pub round: usize,
     pub player_amount: usize,
-    pub bets: Vec<Vec<usize>>,
-    pub history: Vec<Vec<Action>>,
+    pub round: usize,
+
     pub private_hands: Vec<Vec<Card>>,
     pub community_cards: Vec<Card>,
+    pub bets: Vec<Vec<u16>>,
+
+    pub history: Vec<Vec<Action>>,
+    pub folded_players: Vec<u8>,
 }
 
 impl GameState for LPGameState {
@@ -74,33 +82,29 @@ impl GameState for LPGameState {
                 vec![0, 0]  // Second betting round
             ],
             history: vec![vec![], vec![]],
-            community_cards: vec![drawn_items[2]]
+            community_cards: vec![drawn_items[2]],
+            folded_players: vec![],
         }
-    }
-
-    fn get_total_rounds() -> usize {
-        return 2;
-    }
-
-    fn get_current_round_index(&self) -> usize {
-        return self.round;
     }
 
     fn get_player_amount(&self) -> usize {
         return self.player_amount;
     }
 
+    fn get_current_round_index(&self) -> usize {
+        return self.round;
+    }
+
+    fn get_total_rounds() -> usize {
+        return 2;
+    }
+
     fn get_history(&self) -> &Vec<Vec<Action>> {
         return &self.history;
     }
 
-    fn is_leaf_node(&self, _subgame_end_situation: usize) -> bool {
-        // There are never leaf nodes in Leduc Poker
-        return false;
-    }
-
     fn get_active_player_index(&self) -> usize {
-        if self.round == POST_FLOP_INDEX {
+        if self.round == 1 {
             return (self.history[self.round].len() + 1) % 2
         }
 
@@ -124,13 +128,6 @@ impl GameState for LPGameState {
     }
 
     fn is_terminal(&self) -> bool {
-        // Qh, Jd, Call, Call, Bet, Bet
-        // if self.private_hands[1] == vec![card_from_string("Qh".to_string())] && self.community_cards == vec![card_from_string("Jd".to_string())] && self.history[0] == vec![Action::Call, Action::Call] && self.history[1] == vec![Action::Bet_1, Action::Bet_1] {
-        //     println!("YYOOOO 0")
-        // }
-        // if self.private_hands[1] == vec![card_from_string("Qh".to_string())] && self.community_cards == vec![card_from_string("Jd".to_string())] {
-        //     println!("YYOOOO 1")
-        // }
         // If anyone folded at any point, it's terminal
         if self.history.iter()
             .map(|round_history| {
@@ -146,6 +143,21 @@ impl GameState for LPGameState {
         // If the second round is finished
         if self.round == 1 && (self.all_players_checked() || self.bet_or_raise_finished()) {
             return true
+        }
+
+        return false
+    }
+
+    fn is_leaf_node(&self, _leaf_node_situation: usize) -> bool {
+        // In LP we always search until the end of the game, so we're never in a leaf node.
+        return false;
+    }
+
+    fn can_proceed_to_next_round(&self) -> bool {
+        if self.round == 0 {
+            if self.all_players_checked() || self.bet_or_raise_finished() {
+                return true
+            }
         }
 
         return false
@@ -227,17 +239,7 @@ impl GameState for LPGameState {
             return payoff;
         }).collect();
 
-        return payoffs
-    }
-
-    fn can_proceed_to_next_round(&self) -> bool {
-        if self.round == PRE_FLOP_INDEX {
-            if self.all_players_checked() || self.bet_or_raise_finished() {
-                return true
-            }
-        }
-
-        return false
+        return payoffs;
     }
 
     fn handle_action(&self, action: Action) -> Self {
@@ -249,11 +251,11 @@ impl GameState for LPGameState {
 
         if action != Action::Fold {
             // Always match the opponent bet first
-            let mut bet_increase_amount: usize = opponent_current_round_bet - active_player_current_round_bet;
+            let mut bet_increase_amount = opponent_current_round_bet - active_player_current_round_bet;
     
             if action == Action::Bet {
                 let mut raise_amount = 2;
-                if self.round == POST_FLOP_INDEX {
+                if self.round == 1 {
                     raise_amount = 4;
                 }
 
@@ -269,15 +271,16 @@ impl GameState for LPGameState {
             bets: new_bets,
             round: self.round,
             history: self.history.clone(),
-            community_cards: self.community_cards.clone()
+            community_cards: self.community_cards.clone(),
+            folded_players: self.folded_players.clone()
         };
         next_state.history[next_state.round].push(action);
 
         if next_state.can_proceed_to_next_round() {
-            next_state.round = POST_FLOP_INDEX
+            next_state.round = 1;
         }
 
-        return next_state;
+        return next_state
     }
 }
 
