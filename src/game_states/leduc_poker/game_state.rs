@@ -123,13 +123,13 @@ impl GameState for LPGameState {
         if bet_raise_amount > 0 {            
             // If there were less than 2 raises we can still raise more
             if bet_raise_amount < 2 {
-                return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }]
+                return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }]
             }
 
             return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]
         }
 
-        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }];
+        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }];
     }
 
     fn is_terminal(&self) -> bool {
@@ -294,7 +294,7 @@ impl LPGameState {
     fn all_players_checked(&self) -> bool {
         let num_checked = self.history[self.round].iter().filter(|&action| action == &Action { action_type: ActionType::Call, raise_amount: 0 }).count();
 
-        return num_checked == self.player_amount && !self.history[self.round].iter().any(|action| action == &Action { action_type: ActionType::Bet, raise_amount: 1 })
+        return num_checked == self.player_amount && !self.history[self.round].iter().any(|action| action.action_type == ActionType::Bet)
     }
 
     // Determines if the current betting round is finished, i.e., a bet or raise has been called or everyone has folded.

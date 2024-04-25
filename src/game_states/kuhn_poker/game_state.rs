@@ -71,11 +71,11 @@ impl GameState for KPGameState {
 
     fn is_terminal(&self) -> bool {
         let terminal_histories = vec![
-            vec![Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Fold, raise_amount: 0 }],
-            vec![Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Bet, raise_amount: 0 }, Action { action_type: ActionType::Fold, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Bet, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
             vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
-            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
-            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }, Action { action_type: ActionType::Fold, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }],
+            vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }, Action { action_type: ActionType::Fold, raise_amount: 0 }],
         ];
 
         if terminal_histories.contains(&self.history[0]) {
@@ -117,7 +117,7 @@ impl GameState for KPGameState {
             }
         }
 
-        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 1 }]
+        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }]
     }
 
     fn can_proceed_to_next_round(&self) -> bool {
