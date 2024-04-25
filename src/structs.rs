@@ -78,6 +78,6 @@ impl Action {
     }
 
     pub fn is_bet_raise(&self) -> bool {
-        return self.raise_amount > 0;
+        return self.action_type == ActionType::Bet;
     }
 }
