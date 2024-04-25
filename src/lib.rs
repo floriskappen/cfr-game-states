@@ -1,7 +1,4 @@
 pub mod structs;
-pub mod abstraction {
-    pub mod action_abstraction;
-}
 pub mod game_states {
     pub mod kuhn_poker {
         pub mod game_state;

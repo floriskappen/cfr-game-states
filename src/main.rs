@@ -1,7 +1,4 @@
 pub mod structs;
-pub mod abstraction {
-    pub mod action_abstraction;
-}
 pub mod game_states {
     pub mod kuhn_poker {
         pub mod game_state;
@@ -18,6 +15,7 @@ pub mod game_states {
 mod tests {
     mod nlth_headsup;
     mod nlth_multiplayer;
+    mod action_abstraction;
 }
 
 fn main() {}

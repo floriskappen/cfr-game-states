@@ -9,25 +9,25 @@ lazy_static! {
 
     pub static ref PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE: HashMap<ActionIdentifier, ActionWithRaise> = {
         let mut result = HashMap::new();
-        result.insert(52, ActionWithRaise { action: Action::Fold, raise_amount: 0 });
-        result.insert(53, ActionWithRaise { action: Action::Call, raise_amount: 0 });
-        result.insert(54, ActionWithRaise { action: Action::Bet, raise_amount: 0 });
-        result.insert(55, ActionWithRaise { action: Action::Bet, raise_amount: 25 });
-        result.insert(56, ActionWithRaise { action: Action::Bet, raise_amount: 50 });
-        result.insert(57, ActionWithRaise { action: Action::Bet, raise_amount: 75 });
-        result.insert(58, ActionWithRaise { action: Action::Bet, raise_amount: 100 });
-        result.insert(59, ActionWithRaise { action: Action::Bet, raise_amount: 134 });
-        result.insert(60, ActionWithRaise { action: Action::Bet, raise_amount: 150 });
-        result.insert(61, ActionWithRaise { action: Action::Bet, raise_amount: 200 });
-        result.insert(62, ActionWithRaise { action: Action::Bet, raise_amount: 400 });
-        result.insert(63, ActionWithRaise { action: Action::Bet, raise_amount: 700 });
-        result.insert(64, ActionWithRaise { action: Action::Bet, raise_amount: 800 });
-        // result.insert(65, ActionWithRaise { action: Action::Bet, raise_amount: 10.0 }); // 65 is skipped for some reason? fix
-        result.insert(66, ActionWithRaise { action: Action::Bet, raise_amount: 1000 });
-        result.insert(67, ActionWithRaise { action: Action::Bet, raise_amount: 1300 });
-        result.insert(68, ActionWithRaise { action: Action::Bet, raise_amount: 1500 });
-        result.insert(69, ActionWithRaise { action: Action::Bet, raise_amount: 2500 });
-        result.insert(70, ActionWithRaise { action: Action::AllIn, raise_amount: 0 });
+        result.insert(52, ActionWithRaise { action_type: ActionType::Fold, raise_amount: 0 });
+        result.insert(53, ActionWithRaise { action_type: ActionType::Call, raise_amount: 0 });
+        result.insert(54, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 0 });
+        result.insert(55, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 25 });
+        result.insert(56, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 50 });
+        result.insert(57, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 75 });
+        result.insert(58, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 100 });
+        result.insert(59, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 134 });
+        result.insert(60, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 150 });
+        result.insert(61, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 200 });
+        result.insert(62, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 400 });
+        result.insert(63, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 700 });
+        result.insert(64, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 800 });
+        // result.insert(65, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 10.0 }); // 65 is skipped for some reason? fix
+        result.insert(66, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1000 });
+        result.insert(67, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1300 });
+        result.insert(68, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 1500 });
+        result.insert(69, ActionWithRaise { action_type: ActionType::Bet, raise_amount: 2500 });
+        result.insert(70, ActionWithRaise { action_type: ActionType::AllIn, raise_amount: 0 });
 
         return result;
     };
@@ -37,16 +37,10 @@ lazy_static! {
             .map(|(&id, action_with_raise)| (action_with_raise.clone(), id))
             .collect();
     };
-
-    pub static ref BET_RAISE_ALL_IN_ACTIONS: Vec<ActionIdentifier> = {
-        let mut result = BET_RAISE_ACTIONS.clone();
-        result.push(PREDEFINED_ACTION_WITH_RAISE_TO_ACTION_ID.get(&ActionWithRaise { action: Action::AllIn, raise_amount: 0 }).unwrap().clone());
-        return result;
-    };
 }
 
 #[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum Action {
+pub enum ActionType {
     Fold,
     Call,
     Bet,
@@ -55,16 +49,16 @@ pub enum Action {
 
 #[derive(Eq, Hash, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionWithRaise {
-    pub action: Action,
+    pub action_type: ActionType,
     pub raise_amount: u16
 }
 
 impl ActionWithRaise {
     pub fn as_string(&self) -> String {
         if self.raise_amount != 0 {
-            return format!("{:?} x{}", self.action, self.raise_amount)
+            return format!("{:?} x{}", self.action_type, self.raise_amount)
         }
-        return format!("{:?}", self.action)
+        return format!("{:?}", self.action_type)
     }
     pub fn get_multiplier(&self) -> f32 {
         return self.raise_amount as f32 / 100.0
