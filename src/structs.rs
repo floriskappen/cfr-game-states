@@ -67,32 +67,39 @@ impl Action {
             Action::AllIn   => 70,
         }
     }
-    pub fn from_string(value: &str) -> Self {
-        return Action::from_value(value.parse::<u8>().unwrap())
+    pub fn from_string(value: &str) -> Option<Self> {
+        if let Ok(value_u8) = value.parse::<u8>() {
+            return Action::from_value(value_u8);
+        }
+        return None;
     }
 
-    pub fn from_value(value: u8) -> Self {
+    pub fn from_value(value: u8) -> Option<Self> {
         match value {
-            52 => Action::Fold,
-            53 => Action::Call,
-            54 => Action::Bet,
-            55 => Action::Bet0_25,
-            56 => Action::Bet0_5,
-            57 => Action::Bet0_75,
-            58 => Action::Bet1,
-            59 => Action::Bet1_34,
-            60 => Action::Bet1_5,
-            61 => Action::Bet2,
-            62 => Action::Bet4,
-            63 => Action::Bet7,
-            64 => Action::Bet8,
-            66 => Action::Bet10,
-            67 => Action::Bet13,
-            68 => Action::Bet15,
-            69 => Action::Bet25,
-            70 => Action::AllIn,
-            _ => Action::Call
+            52 => Some(Action::Fold),
+            53 => Some(Action::Call),
+            54 => Some(Action::Bet),
+            55 => Some(Action::Bet0_25),
+            56 => Some(Action::Bet0_5),
+            57 => Some(Action::Bet0_75),
+            58 => Some(Action::Bet1),
+            59 => Some(Action::Bet1_34),
+            60 => Some(Action::Bet1_5),
+            61 => Some(Action::Bet2),
+            62 => Some(Action::Bet4),
+            63 => Some(Action::Bet7),
+            64 => Some(Action::Bet8),
+            66 => Some(Action::Bet10),
+            67 => Some(Action::Bet13),
+            68 => Some(Action::Bet15),
+            69 => Some(Action::Bet25),
+            70 => Some(Action::AllIn),
+            _ => None
         }
+    }
+
+    pub fn get_max_existing_action_value() -> u8 {
+        return 70;
     }
 
     pub fn get_pot_multiplier(&self) -> f32 {
