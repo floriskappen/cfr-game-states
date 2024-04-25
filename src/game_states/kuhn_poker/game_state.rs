@@ -23,22 +23,28 @@ pub struct KPGameState {
 }
 
 impl GameState for KPGameState {
-    fn new_empty(_player_amount: usize, rng_seed: Option<u64>) -> Self {
-        let mut rng = if let Some(seed) = rng_seed {
-            StdRng::seed_from_u64(seed)
+    fn new_empty(_player_amount: usize, draw_cards: bool, rng_seed: Option<u64>) -> Self {
+        let private_hands;
+        if draw_cards {
+            let mut rng = if let Some(seed) = rng_seed {
+                StdRng::seed_from_u64(seed)
+            } else {
+                StdRng::seed_from_u64(thread_rng().next_u64())
+            };
+    
+            let mut shuffled_cards = DECK.to_vec();
+            shuffled_cards.shuffle(&mut rng);
+    
+            // Draw 2 items
+            let drawn_items: Vec<Card> = shuffled_cards.iter().take(2).cloned().collect();
+            private_hands = vec![drawn_items[0], drawn_items[1]];
         } else {
-            StdRng::seed_from_u64(thread_rng().next_u64())
-        };
+            private_hands = vec![];
+        }
 
-        let mut shuffled_cards = DECK.to_vec();
-        shuffled_cards.shuffle(&mut rng);
-
-        // Draw 2 items
-        let drawn_items: Vec<Card> = shuffled_cards.iter().take(2).cloned().collect();
-        
         return KPGameState {
             player_amount: 2,
-            private_hands: vec![drawn_items[0], drawn_items[1]],
+            private_hands,
             history: vec![vec![]],
             bets: vec![1, 1] // Default 1$ bet
         }

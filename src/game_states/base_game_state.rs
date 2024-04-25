@@ -1,7 +1,7 @@
 use crate::structs::Action;
 
 pub trait GameState {
-    fn new_empty(player_amount: usize, seed: Option<u64>) -> Self;
+    fn new_empty(player_amount: usize, draw_cards: bool, seed: Option<u64>) -> Self;
     fn get_total_rounds() -> usize;
     fn get_player_amount(&self) -> usize;
     fn get_current_round_bet_raise_amount(&self) -> usize;

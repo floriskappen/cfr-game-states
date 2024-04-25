@@ -43,27 +43,41 @@ pub struct NLTHGameState {
 }
 
 impl GameState for NLTHGameState {
-    fn new_empty(player_amount: usize, rng_seed: Option<u64>) -> Self {
-        let mut deck = Vec::new();
-
-        for &rank in RANK_TO_CHAR.iter() {
-            for &suit in SUIT_TO_CHAR.iter() {
-                let card = card_from_string(format!("{}{}", rank, suit));
-                deck.push(card);
+    fn new_empty(player_amount: usize, draw_cards: bool, rng_seed: Option<u64>) -> Self {
+        let private_hands;
+        let community_cards;
+        if draw_cards {
+            let mut deck = Vec::new();
+    
+            for &rank in RANK_TO_CHAR.iter() {
+                for &suit in SUIT_TO_CHAR.iter() {
+                    let card = card_from_string(format!("{}{}", rank, suit));
+                    deck.push(card);
+                }
             }
-        }
+    
+            let mut rng = if let Some(seed) = rng_seed {
+                StdRng::seed_from_u64(seed)
+            } else {
+                StdRng::seed_from_u64(thread_rng().next_u64())
+            };
+            deck.shuffle(&mut rng);
+    
+            // Draw 2 cards for each player + 5 community cards
+            let drawn_items: Vec<Card> = deck.into_iter().take(
+                (2 * player_amount) + 5
+            ).collect();
 
-        let mut rng = if let Some(seed) = rng_seed {
-            StdRng::seed_from_u64(seed)
+            private_hands = (0..player_amount).map(|i| {
+                return vec![
+                    drawn_items[i*2], drawn_items[(i*2)+1]
+                ]
+            }).collect::<Vec<Vec<Card>>>();
+            community_cards = drawn_items[drawn_items.len() - 5..].to_vec();
         } else {
-            StdRng::seed_from_u64(thread_rng().next_u64())
-        };
-        deck.shuffle(&mut rng);
-
-        // Draw 2 cards for each player + 5 community cards
-        let drawn_items: Vec<Card> = deck.into_iter().take(
-            (2 * player_amount) + 5
-        ).collect();
+            private_hands = (0..player_amount).map(|_| vec![]).collect();
+            community_cards = vec![];
+        }
 
         let blinds = (0..player_amount).map(|player_index| {
             if player_index == 0 {
@@ -78,12 +92,8 @@ impl GameState for NLTHGameState {
             round: ROUND_PREFLOP,
             player_amount,
 
-            private_hands: (0..player_amount).map(|i| {
-                return vec![
-                    drawn_items[i*2], drawn_items[(i*2)+1]
-                ]
-            }).collect(),
-            community_cards: drawn_items[drawn_items.len() - 5..].to_vec(),
+            private_hands,
+            community_cards,
             stacks: (0..player_amount).map(|i| STACK_SIZE - blinds[i]).collect(),
             bets: vec![
                 (0..player_amount).map(|i| blinds[i]).collect(),
