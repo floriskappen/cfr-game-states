@@ -106,10 +106,10 @@ impl GameState for LPGameState {
 
     fn get_active_player_index(&self) -> usize {
         if self.round == 1 {
-            return self.history[self.round].len() % 2
+            return (self.history[self.round].len() + 1) % 2
         }
 
-        return (self.history[self.round].len() + 1) % 2;
+        return self.history[self.round].len() % 2;
     }
 
     fn get_current_round_bet_raise_amount(&self) -> usize {
