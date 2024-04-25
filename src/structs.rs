@@ -67,6 +67,10 @@ impl Action {
             Action::AllIn   => 70,
         }
     }
+    pub fn from_string(value: &str) -> Self {
+        return Action::from_value(value.parse::<u8>().unwrap())
+    }
+
     pub fn from_value(value: u8) -> Self {
         match value {
             52 => Action::Fold,
