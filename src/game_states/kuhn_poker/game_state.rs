@@ -122,7 +122,7 @@ impl GameState for KPGameState {
         return self.history[0].len() % 2;
     }
 
-    fn get_active_player_actions(&self, _available_actions: &Vec<Action>) -> Vec<Action> {
+    fn get_active_player_actions(&self, _available_actions: Vec<Action>) -> Vec<Action> {
         if let Some(&previous_action) = self.history[0].iter().rev().next() {
             if previous_action.action_type == ActionType::Bet {
                 return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]

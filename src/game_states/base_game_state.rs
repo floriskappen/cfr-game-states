@@ -15,7 +15,7 @@ pub trait GameState {
     fn is_terminal(&self) -> bool;
     fn get_payoffs(&self) -> Vec<i32>;
     fn get_active_player_index(&self) -> usize;
-    fn get_active_player_actions(&self, available_actions: &Vec<Action>) -> Vec<Action>;
+    fn get_active_player_actions(&self, available_actions: Vec<Action>) -> Vec<Action>;
     fn handle_action(&self, action: Action) -> Self;
     fn can_proceed_to_next_round(&self) -> bool;
 }

@@ -131,7 +131,7 @@ impl GameState for LPGameState {
         return self.history[self.round].iter().filter(|&action| action.is_bet_raise()).count();
     }
 
-    fn get_active_player_actions(&self, _available_actions: &Vec<Action>) -> Vec<Action> {
+    fn get_active_player_actions(&self, _available_actions: Vec<Action>) -> Vec<Action> {
         let bet_raise_amount = self.get_current_round_bet_raise_amount();
 
         // If there was a bet this round

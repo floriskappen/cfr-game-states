@@ -180,10 +180,10 @@ impl GameState for NLTHGameState {
         return self.history[self.round].iter().filter(|&action| action.is_bet_raise()).count();
     }
 
-    fn get_active_player_actions(&self, available_actions: &Vec<Action>) -> Vec<Action> {
+    fn get_active_player_actions(&self, available_actions: Vec<Action>) -> Vec<Action> {
         let pot = self.get_total_pot();
 
-        return available_actions.iter().filter_map(|&action| {
+        return available_actions.into_iter().filter_map(|action| {
             if action.action_type == ActionType::Fold {
                 return Some(action)
             };
