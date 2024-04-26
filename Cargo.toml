@@ -11,6 +11,7 @@ hand-isomorphism-rust = { path = "./lib/hand-isomorphism-rust" }
 holdem-hand-evaluator = { git = "https://github.com/b-inary/holdem-hand-evaluator" }
 itertools = "0.12.1"
 lazy_static = "1.4.0"
+dotenv = "0.15.0"
 log = "0.4.21"
 rand = "0.8.5"
 serde = { version = "1.0.198", features = ["derive"] }

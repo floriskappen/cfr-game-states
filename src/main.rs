@@ -22,4 +22,8 @@ mod tests {
     mod action_abstraction;
 }
 
-fn main() {}
+use dotenv::dotenv;
+
+fn main() {
+    dotenv().ok();
+}

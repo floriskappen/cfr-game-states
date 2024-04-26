@@ -1,5 +1,8 @@
+use std::env;
+
 use itertools::Itertools;
 use rand::prelude::*;
+use lazy_static::lazy_static;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
@@ -8,6 +11,11 @@ use crate::abstraction::action_translation::pseudo_harmonic_mapping_randomized;
 use crate::game_states::base_game_state::GameState;
 use crate::structs::{ActionType, Action};
 use super::rank::rank_hand;
+
+lazy_static! {
+    pub static ref USE_ACTION_TRANSLATION: bool = env::var("USE_ACTION_TRANSLATION").is_ok();
+}
+
 
 const ROUND_PREFLOP: usize = 0;
 const ROUND_FLOP: usize = 1;
@@ -317,8 +325,12 @@ impl GameState for NLTHGameState {
 
     fn handle_action(&self, action: Action) -> Self {
         // Save abstracted action
-        let abstracted_action = if !BLUEPRINT_AVAILABLE_ACTIONS[self.round][self.get_current_round_bet_raise_amount()].contains(&action) {
+        let abstracted_action =
+            if *USE_ACTION_TRANSLATION && // Should be optional as it is not necessary during blueprint calculation
+            !BLUEPRINT_AVAILABLE_ACTIONS[self.round][self.get_current_round_bet_raise_amount()].contains(&action)
+        {
             // Use randomized pseudo-harmonic mapping for action translation
+            println!("Using action translation");
             let mut closest_lower: Option<Action>  = None;
             let mut closest_upper: Option<Action> = None;
             for &abstracted_action in BLUEPRINT_AVAILABLE_ACTIONS[self.round][self.get_current_round_bet_raise_amount()].iter() {
