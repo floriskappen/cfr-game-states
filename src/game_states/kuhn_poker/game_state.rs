@@ -17,7 +17,7 @@ lazy_static! {
 #[derive(Clone, Debug)]
 pub struct KPGameState {
     pub player_amount: usize,
-    pub private_hands: Vec<Card>,
+    pub private_hands: Vec<Vec<Card>>,
     pub history: Vec<Vec<Action>>,
     pub bets: Vec<usize>
 }
@@ -37,9 +37,9 @@ impl GameState for KPGameState {
     
             // Draw 2 items
             let drawn_items: Vec<Card> = shuffled_cards.iter().take(2).cloned().collect();
-            private_hands = vec![drawn_items[0], drawn_items[1]];
+            private_hands = vec![vec![drawn_items[0]], vec![drawn_items[1]]];
         } else {
-            private_hands = vec![];
+            private_hands = vec![vec![], vec![]];
         }
 
         return KPGameState {
@@ -60,6 +60,10 @@ impl GameState for KPGameState {
 
     fn get_player_amount(&self) -> usize {
         return self.player_amount;
+    }
+
+    fn get_private_hands(&self) -> &Vec<Vec<Card>> {
+        return &self.private_hands
     }
 
     fn get_history(&self) -> &Vec<Vec<Action>> {
@@ -100,7 +104,7 @@ impl GameState for KPGameState {
             winning_player_identifier = (i+1) % 2;
         } else {
             // Showoff
-            if self.private_hands[0] > self.private_hands[1] {
+            if self.private_hands[0][0] > self.private_hands[1][0] {
                 winning_player_identifier = 0;
             } else {
                 winning_player_identifier = 1;

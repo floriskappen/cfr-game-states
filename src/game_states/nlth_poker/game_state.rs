@@ -148,6 +148,10 @@ impl GameState for NLTHGameState {
         return self.active_player_index;
     }
 
+    fn get_private_hands(&self) -> &Vec<Vec<Card>> {
+        return &self.private_hands
+    }
+
     fn get_history(&self) -> &Vec<Vec<Action>> {
         return &self.history;
     }

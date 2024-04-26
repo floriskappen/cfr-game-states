@@ -109,6 +109,10 @@ impl GameState for LPGameState {
         return 2;
     }
 
+    fn get_private_hands(&self) -> &Vec<Vec<Card>> {
+        return &self.private_hands
+    }
+
     fn get_history(&self) -> &Vec<Vec<Action>> {
         return &self.history;
     }

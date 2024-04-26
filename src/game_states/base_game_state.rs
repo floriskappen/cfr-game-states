@@ -1,3 +1,5 @@
+use hand_isomorphism_rust::deck::Card;
+
 use crate::structs::Action;
 
 pub trait GameState {
@@ -5,6 +7,7 @@ pub trait GameState {
     fn get_total_rounds() -> usize;
     fn get_player_amount(&self) -> usize;
     fn get_current_round_bet_raise_amount(&self) -> usize;
+    fn get_private_hands(&self) -> &Vec<Vec<Card>>;
     fn get_history(&self) -> &Vec<Vec<Action>>;
     fn abstract_history(&mut self);
     fn is_leaf_node(&self, subgame_end_situation: usize) -> bool;
