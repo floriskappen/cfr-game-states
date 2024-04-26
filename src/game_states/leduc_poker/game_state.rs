@@ -113,6 +113,8 @@ impl GameState for LPGameState {
         return &self.history;
     }
 
+    fn abstract_history(&mut self) {}
+
     fn get_active_player_index(&self) -> usize {
         if self.round == 1 {
             return (self.history[self.round].len() + 1) % 2

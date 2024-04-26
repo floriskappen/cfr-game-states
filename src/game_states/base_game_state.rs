@@ -6,6 +6,7 @@ pub trait GameState {
     fn get_player_amount(&self) -> usize;
     fn get_current_round_bet_raise_amount(&self) -> usize;
     fn get_history(&self) -> &Vec<Vec<Action>>;
+    fn abstract_history(&mut self);
     fn is_leaf_node(&self, subgame_end_situation: usize) -> bool;
     fn get_current_round_index(&self) -> usize;
     fn is_terminal(&self) -> bool;

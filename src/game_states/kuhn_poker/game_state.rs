@@ -66,6 +66,8 @@ impl GameState for KPGameState {
         return &self.history;
     }
 
+    fn abstract_history(&mut self) {}
+
     fn is_leaf_node(&self, _subgame_end_situation: usize) -> bool {
         // There are never leaf nodes in Kuhn Poker
         return false;

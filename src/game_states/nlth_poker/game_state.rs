@@ -152,6 +152,10 @@ impl GameState for NLTHGameState {
         return &self.history;
     }
 
+    fn abstract_history(&mut self) {
+        self.history = self.history_abstracted.clone();
+    }
+
     /*
         0 => None, until the game ends
         1 => Until the second round starts
