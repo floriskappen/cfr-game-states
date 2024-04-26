@@ -3,6 +3,8 @@ use rand::prelude::*;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
+use crate::abstraction::action_abstraction::BLUEPRINT_AVAILABLE_ACTIONS;
+use crate::abstraction::action_translation::pseudo_harmonic_mapping_randomized;
 use crate::game_states::base_game_state::GameState;
 use crate::structs::{ActionType, Action};
 use super::rank::rank_hand;
@@ -28,6 +30,7 @@ pub struct NLTHGameState {
 
     pub previous_raise_amount: usize,
     pub history: Vec<Vec<Action>>,
+    pub history_abstracted: Vec<Vec<Action>>,
     pub active_player_index: usize,
     pub folded_players: Vec<bool>,
     pub all_in_players: Vec<i32>,
@@ -104,6 +107,9 @@ impl GameState for NLTHGameState {
 
             previous_raise_amount: BIG_BLIND,
             history: vec![
+                vec![], vec![], vec![], vec![]
+            ],
+            history_abstracted: vec![
                 vec![], vec![], vec![], vec![]
             ],
             // In headsup poker, the small blind acts first preflop. Postflop the big blind acts first
@@ -310,6 +316,44 @@ impl GameState for NLTHGameState {
     }
 
     fn handle_action(&self, action: Action) -> Self {
+        // Save abstracted action
+        let abstracted_action = if !BLUEPRINT_AVAILABLE_ACTIONS[self.round][self.get_current_round_bet_raise_amount()].contains(&action) {
+            // Use randomized pseudo-harmonic mapping for action translation
+            let mut closest_lower: Option<Action>  = None;
+            let mut closest_upper: Option<Action> = None;
+            for &abstracted_action in BLUEPRINT_AVAILABLE_ACTIONS[self.round][self.get_current_round_bet_raise_amount()].iter() {
+                if abstracted_action.raise_amount < action.raise_amount && (
+                    closest_lower.is_some_and(|closest_lower| closest_lower.raise_amount < abstracted_action.raise_amount)
+                ) {
+                    closest_lower = Some(abstracted_action);
+                } else if abstracted_action.raise_amount > action.raise_amount && (
+                    closest_upper.is_some_and(|closest_upper| closest_upper.raise_amount > abstracted_action.raise_amount)
+                ) {
+                    closest_upper = Some(abstracted_action);
+                }
+            }
+
+            if closest_lower.is_none() && closest_upper.is_some() {
+                // If there's only an upper bound, we use that one
+                closest_upper.unwrap()
+            } else if closest_upper.is_none() && closest_lower.is_some() {
+                // If there's only a lower bound, we use that one
+                closest_lower.unwrap()
+            } else {
+                // Use randomized pseudo-harmonic mapping which will return either the lower or upper raise_amount as f64
+                let lower = closest_lower.unwrap();
+                let upper = closest_upper.unwrap();
+                let mapped_raise_amount = pseudo_harmonic_mapping_randomized(
+                    action.raise_amount as f64,
+                    lower.raise_amount as f64,
+                    upper.raise_amount as f64
+                );
+                Action { action_type: action.action_type, raise_amount: mapped_raise_amount as u16 }
+            }
+        } else {
+            action
+        };
+
         let mut next_state = self.clone();
 
         if action.action_type == ActionType::Fold {
@@ -350,6 +394,7 @@ impl GameState for NLTHGameState {
         }
 
         next_state.history[next_state.round].push(action);
+        next_state.history_abstracted[next_state.round].push(abstracted_action);
 
         // Set the new active player index
         let mut current_new_active_player_index = (next_state.active_player_index + 1) % next_state.player_amount;
