@@ -38,6 +38,7 @@ pub struct NLTHGameState {
 
     pub previous_raise_amount: usize,
     pub history: Vec<Vec<Action>>,
+    pub history_action_ids: Vec<Vec<u8>>,
     pub history_abstracted: Vec<Vec<Action>>,
     pub active_player_index: usize,
     pub folded_players: Vec<bool>,
@@ -117,6 +118,9 @@ impl GameState for NLTHGameState {
             history: vec![
                 vec![], vec![], vec![], vec![]
             ],
+            history_action_ids: vec![
+                vec![], vec![], vec![], vec![]
+            ],
             history_abstracted: vec![
                 vec![], vec![], vec![], vec![]
             ],
@@ -154,6 +158,10 @@ impl GameState for NLTHGameState {
 
     fn get_history(&self) -> &Vec<Vec<Action>> {
         return &self.history;
+    }
+
+    fn get_history_action_ids(&self) -> &Vec<Vec<u8>> {
+        return &self.history_action_ids;
     }
 
     fn abstract_history(&mut self) {
@@ -331,7 +339,7 @@ impl GameState for NLTHGameState {
         return false;
     }
 
-    fn handle_action(&self, action: Action) -> Self {
+    fn handle_action(&self, action: Action, action_id: u8) -> Self {
         // Save abstracted action
         let abstracted_action = if *USE_ACTION_TRANSLATION {
             translate_action(action, self.round, self.get_current_round_bet_raise_amount())
@@ -380,6 +388,7 @@ impl GameState for NLTHGameState {
 
         next_state.history[next_state.round].push(action);
         next_state.history_abstracted[next_state.round].push(abstracted_action);
+        next_state.history_action_ids[next_state.round].push(action_id);
 
         // Set the new active player index
         let mut current_new_active_player_index = (next_state.active_player_index + 1) % next_state.player_amount;

@@ -9,6 +9,7 @@ pub trait GameState {
     fn get_current_round_bet_raise_amount(&self) -> usize;
     fn get_private_hands(&self) -> &Vec<Vec<Card>>;
     fn get_history(&self) -> &Vec<Vec<Action>>;
+    fn get_history_action_ids(&self) -> &Vec<Vec<u8>>;
     fn abstract_history(&mut self);
     fn is_leaf_node(&self, subgame_end_situation: usize) -> bool;
     fn get_current_round_index(&self) -> usize;
@@ -16,6 +17,6 @@ pub trait GameState {
     fn get_payoffs(&self) -> Vec<i32>;
     fn get_active_player_index(&self) -> usize;
     fn get_active_player_actions(&self, available_actions: Vec<Action>) -> Vec<Action>;
-    fn handle_action(&self, action: Action) -> Self;
+    fn handle_action(&self, action: Action, action_id: u8) -> Self;
     fn can_proceed_to_next_round(&self) -> bool;
 }
