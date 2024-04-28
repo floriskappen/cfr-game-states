@@ -19,7 +19,6 @@ pub struct KPGameState {
     pub player_amount: usize,
     pub private_hands: Vec<Vec<Card>>,
     pub history: Vec<Vec<Action>>,
-    pub history_action_ids: Vec<Vec<u8>>,
     pub bets: Vec<usize>
 }
 
@@ -47,7 +46,6 @@ impl GameState for KPGameState {
             player_amount: 2,
             private_hands,
             history: vec![vec![]],
-            history_action_ids: vec![vec![]],
             bets: vec![1, 1] // Default 1$ bet
         }
     }
@@ -72,11 +70,15 @@ impl GameState for KPGameState {
         return &self.history;
     }
 
-    fn get_history_action_ids(&self) -> &Vec<Vec<u8>> {
-        return &self.history_action_ids;
+    fn get_community_cards(&self) -> &Vec<Card> {
+        return &self.private_hands[0] // Wrong placeholder value, is never used
     }
 
-    fn abstract_history(&mut self) {}
+    fn set_community_cards(&mut self, _community_cards: Vec<Card>) {}
+
+    fn set_private_hands(&mut self, private_hands: Vec<Vec<Card>>) {
+        self.private_hands = private_hands;
+    }
 
     fn is_leaf_node(&self, _subgame_end_situation: usize) -> bool {
         // There are never leaf nodes in Kuhn Poker
@@ -143,7 +145,7 @@ impl GameState for KPGameState {
         return false;
     }
 
-    fn handle_action(&self, action: Action, action_id: u8) -> Self {
+    fn handle_action(&self, action: Action) -> Self {
         let mut new_bets = self.bets.clone();
 
         let active_player_index = self.get_active_player_index();
@@ -166,12 +168,10 @@ impl GameState for KPGameState {
             player_amount: self.player_amount,
             private_hands: self.private_hands.clone(),
             history: self.history.clone(),
-            history_action_ids: self.history_action_ids.clone(),
             bets: new_bets,
         };
 
         next_state.history[0].push(action);
-        next_state.history_action_ids[0].push(action_id);
 
         return next_state
     }

@@ -21,10 +21,12 @@ pub fn get_lower_upper_action_from_abstraction(action: Action, round: usize, rai
     let mut closest_upper: Option<Action> = None;
     for &abstracted_action in BLUEPRINT_AVAILABLE_ACTIONS[round][raise_amount].iter() {
         if abstracted_action.raise_amount < action.raise_amount && (
+            closest_lower.is_none() ||
             closest_lower.is_some_and(|closest_lower| closest_lower.raise_amount < abstracted_action.raise_amount)
         ) {
             closest_lower = Some(abstracted_action);
         } else if abstracted_action.raise_amount > action.raise_amount && (
+            closest_upper.is_none() ||
             closest_upper.is_some_and(|closest_upper| closest_upper.raise_amount > abstracted_action.raise_amount)
         ) {
             closest_upper = Some(abstracted_action);
@@ -41,7 +43,7 @@ pub fn translate_action(action: Action, round: usize, raise_amount: usize) -> Ac
         // Use randomized pseudo-harmonic mapping for action translation
         println!("Using action translation");
         let (closest_lower, closest_upper) = get_lower_upper_action_from_abstraction(action, round, raise_amount);
-
+        println!("closest_lower: {:?}, closest_upper: {:?}", closest_lower, closest_upper);
         if closest_lower.is_none() && closest_upper.is_some() {
             // If there's only an upper bound, we use that one
             closest_upper.unwrap()

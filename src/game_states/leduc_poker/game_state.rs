@@ -53,7 +53,6 @@ pub struct LPGameState {
     pub bets: Vec<Vec<u16>>,
 
     pub history: Vec<Vec<Action>>,
-    pub history_action_ids: Vec<Vec<u8>>,
     pub folded_players: Vec<u8>,
 }
 
@@ -93,7 +92,6 @@ impl GameState for LPGameState {
                 vec![0, 0]  // Second betting round
             ],
             history: vec![vec![], vec![]],
-            history_action_ids: vec![vec![], vec![]],
             community_cards,
             folded_players: vec![],
         }
@@ -119,11 +117,17 @@ impl GameState for LPGameState {
         return &self.history;
     }
 
-    fn get_history_action_ids(&self) -> &Vec<Vec<u8>> {
-        return &self.history_action_ids;
+    fn get_community_cards(&self) -> &Vec<Card> {
+        return &self.community_cards
     }
 
-    fn abstract_history(&mut self) {}
+    fn set_community_cards(&mut self, community_cards: Vec<Card>) {
+        self.community_cards = community_cards;
+    }
+
+    fn set_private_hands(&mut self, private_hands: Vec<Vec<Card>>) {
+        self.private_hands = private_hands;
+    }
 
     fn get_active_player_index(&self) -> usize {
         if self.round == 1 {
@@ -268,7 +272,7 @@ impl GameState for LPGameState {
         return payoffs;
     }
 
-    fn handle_action(&self, action: Action, action_id: u8) -> Self {
+    fn handle_action(&self, action: Action) -> Self {
         let mut new_bets = self.bets.clone();
         let active_player_index = self.get_active_player_index();
 
@@ -297,12 +301,10 @@ impl GameState for LPGameState {
             bets: new_bets,
             round: self.round,
             history: self.history.clone(),
-            history_action_ids: self.history_action_ids.clone(),
             community_cards: self.community_cards.clone(),
             folded_players: self.folded_players.clone()
         };
         next_state.history[next_state.round].push(action);
-        next_state.history_action_ids[next_state.round].push(action_id);
 
         if next_state.can_proceed_to_next_round() {
             next_state.round = 1;

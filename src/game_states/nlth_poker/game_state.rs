@@ -38,8 +38,6 @@ pub struct NLTHGameState {
 
     pub previous_raise_amount: usize,
     pub history: Vec<Vec<Action>>,
-    pub history_action_ids: Vec<Vec<u8>>,
-    pub history_abstracted: Vec<Vec<Action>>,
     pub active_player_index: usize,
     pub folded_players: Vec<bool>,
     pub all_in_players: Vec<i32>,
@@ -118,12 +116,6 @@ impl GameState for NLTHGameState {
             history: vec![
                 vec![], vec![], vec![], vec![]
             ],
-            history_action_ids: vec![
-                vec![], vec![], vec![], vec![]
-            ],
-            history_abstracted: vec![
-                vec![], vec![], vec![], vec![]
-            ],
             // In headsup poker, the small blind acts first preflop. Postflop the big blind acts first
             // In 3+ player poker, in the preflop round the FTA is the player after the big blind, so in our case player at index 2 (player 3)
             active_player_index: if player_amount == 2 { 0 } else { 2 },
@@ -160,12 +152,16 @@ impl GameState for NLTHGameState {
         return &self.history;
     }
 
-    fn get_history_action_ids(&self) -> &Vec<Vec<u8>> {
-        return &self.history_action_ids;
+    fn get_community_cards(&self) -> &Vec<Card> {
+        return &self.community_cards
     }
 
-    fn abstract_history(&mut self) {
-        self.history = self.history_abstracted.clone();
+    fn set_community_cards(&mut self, community_cards: Vec<Card>) {
+        self.community_cards = community_cards;
+    }
+
+    fn set_private_hands(&mut self, private_hands: Vec<Vec<Card>>) {
+        self.private_hands = private_hands;
     }
 
     /*
@@ -339,7 +335,7 @@ impl GameState for NLTHGameState {
         return false;
     }
 
-    fn handle_action(&self, action: Action, action_id: u8) -> Self {
+    fn handle_action(&self, action: Action) -> Self {
         // Save abstracted action
         let abstracted_action = if *USE_ACTION_TRANSLATION {
             translate_action(action, self.round, self.get_current_round_bet_raise_amount())
@@ -387,8 +383,6 @@ impl GameState for NLTHGameState {
         }
 
         next_state.history[next_state.round].push(action);
-        next_state.history_abstracted[next_state.round].push(abstracted_action);
-        next_state.history_action_ids[next_state.round].push(action_id);
 
         // Set the new active player index
         let mut current_new_active_player_index = (next_state.active_player_index + 1) % next_state.player_amount;
