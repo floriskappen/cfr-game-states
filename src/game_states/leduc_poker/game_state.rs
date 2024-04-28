@@ -31,7 +31,7 @@ lazy_static! {
 }
 
 const PRE_FLOP_INDEX: usize = 0;
-const POST_FLOP_INDEX: usize = 1;
+const _POST_FLOP_INDEX: usize = 1;
 
 lazy_static! {
     static ref DECK: [Card; 6] = {

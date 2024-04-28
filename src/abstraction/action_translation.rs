@@ -41,9 +41,7 @@ pub fn translate_action(action: Action, round: usize, raise_amount: usize) -> Ac
         if !BLUEPRINT_AVAILABLE_ACTIONS[round][raise_amount].contains(&action)
     {
         // Use randomized pseudo-harmonic mapping for action translation
-        println!("Using action translation");
         let (closest_lower, closest_upper) = get_lower_upper_action_from_abstraction(action, round, raise_amount);
-        println!("closest_lower: {:?}, closest_upper: {:?}", closest_lower, closest_upper);
         if closest_lower.is_none() && closest_upper.is_some() {
             // If there's only an upper bound, we use that one
             closest_upper.unwrap()

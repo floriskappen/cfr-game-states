@@ -6,8 +6,6 @@ use lazy_static::lazy_static;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 
-use crate::abstraction::action_abstraction::BLUEPRINT_AVAILABLE_ACTIONS;
-use crate::abstraction::action_translation::{pseudo_harmonic_mapping_randomized, translate_action};
 use crate::game_states::base_game_state::GameState;
 use crate::structs::{ActionType, Action};
 use super::rank::rank_hand;
@@ -18,8 +16,8 @@ lazy_static! {
 
 
 const ROUND_PREFLOP: usize = 0;
-const ROUND_FLOP: usize = 1;
-const ROUND_TURN: usize = 2;
+const _ROUND_FLOP: usize = 1;
+const _ROUND_TURN: usize = 2;
 const ROUND_RIVER: usize = 3;
 
 const STACK_SIZE: usize = 10_000;
@@ -336,13 +334,6 @@ impl GameState for NLTHGameState {
     }
 
     fn handle_action(&self, action: Action) -> Self {
-        // Save abstracted action
-        let abstracted_action = if *USE_ACTION_TRANSLATION {
-            translate_action(action, self.round, self.get_current_round_bet_raise_amount())
-        } else {
-            action
-        };
-
         let mut next_state = self.clone();
 
         if action.action_type == ActionType::Fold {
