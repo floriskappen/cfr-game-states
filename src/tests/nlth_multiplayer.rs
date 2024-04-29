@@ -9,7 +9,7 @@ mod poker_tests_multiplayer {
     // Helper function to create a standardized game state with six players
     fn setup_game_state_six_players() -> NLTHGameState {
         let player_amount = 6;
-        let mut nlth_game_state = NLTHGameState::new_empty(player_amount, None);
+        let mut nlth_game_state = NLTHGameState::new_empty(player_amount, false, None);
         nlth_game_state.private_hands = vec![
             vec![card_from_string("As".to_string()), card_from_string("Ks".to_string())], // Player 0
             vec![card_from_string("2c".to_string()), card_from_string("3d".to_string())], // Player 1
