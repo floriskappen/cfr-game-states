@@ -9,7 +9,15 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use rand::rngs::StdRng;
 use rand::prelude::*;
+use smallvec::smallvec;
+use smallvec::smallvec_inline;
+use smallvec::SmallVec;
 
+use crate::constants::COMMUNITY_CARD_AMOUNT;
+use crate::constants::MAX_PLAYERS;
+use crate::constants::NO_CARD_PLACEHOLDER;
+use crate::constants::PRIVATE_CARD_AMOUNT;
+use crate::constants::ROUNDS;
 use crate::game_states::base_game_state::GameState;
 use crate::structs::ActionType;
 use crate::structs::Action;
@@ -48,12 +56,11 @@ pub struct LPGameState {
     pub player_amount: usize,
     pub round: usize,
 
-    pub private_hands: Vec<Vec<Card>>,
-    pub community_cards: Vec<Card>,
-    pub bets: Vec<Vec<u16>>,
+    pub private_hands: [[Card; PRIVATE_CARD_AMOUNT]; MAX_PLAYERS],
+    pub community_cards: [Card; COMMUNITY_CARD_AMOUNT],
+    pub bets: [[u32; MAX_PLAYERS]; ROUNDS],
 
-    pub history: Vec<Vec<Action>>,
-    pub folded_players: Vec<u8>,
+    pub history: [SmallVec<[Action; 200]>; ROUNDS],
 }
 
 impl GameState for LPGameState {
@@ -73,27 +80,43 @@ impl GameState for LPGameState {
     
             // Draw 3 items
             let drawn_items: Vec<Card> = shuffled_cards.iter().take(3).cloned().collect();
-            private_hands = vec![
-                vec![drawn_items[0]],
-                vec![drawn_items[1]]
+            private_hands = [
+                [drawn_items[0], NO_CARD_PLACEHOLDER],
+                [drawn_items[1], NO_CARD_PLACEHOLDER],
+                [NO_CARD_PLACEHOLDER; 2],
+                [NO_CARD_PLACEHOLDER; 2],
+                [NO_CARD_PLACEHOLDER; 2],
+                [NO_CARD_PLACEHOLDER; 2],
             ];
-            community_cards = vec![drawn_items[2]];
+            community_cards = [
+                drawn_items[2],
+                NO_CARD_PLACEHOLDER, NO_CARD_PLACEHOLDER,
+                NO_CARD_PLACEHOLDER, NO_CARD_PLACEHOLDER,
+            ];
         } else {
-            private_hands = vec![vec![], vec![]];
-            community_cards = vec![];
+            private_hands = [[NO_CARD_PLACEHOLDER; 2]; 6];
+            community_cards = [NO_CARD_PLACEHOLDER; COMMUNITY_CARD_AMOUNT];
         }
 
         return LPGameState {
             round: PRE_FLOP_INDEX,
             player_amount: 2,
             private_hands,
-            bets: vec![
-                vec![1, 1], // First betting round with blinds
-                vec![0, 0]  // Second betting round
+            bets: [
+                (0..MAX_PLAYERS).map(|i| {
+                    if i == 0 || i == 2 {
+                        return 1
+                    }
+                    return 0
+                }).collect::<Vec<u32>>().try_into().unwrap(),
+                [0; 6], // Flop
+                [0; 6], // Turn
+                [0; 6], // River
             ],
-            history: vec![vec![], vec![]],
+            history: [
+                SmallVec::new(), SmallVec::new(), SmallVec::new(), SmallVec::new()
+            ],
             community_cards,
-            folded_players: vec![],
         }
     }
 
@@ -109,23 +132,23 @@ impl GameState for LPGameState {
         return 2;
     }
 
-    fn get_private_hands(&self) -> &Vec<Vec<Card>> {
-        return &self.private_hands
-    }
-
-    fn get_history(&self) -> &Vec<Vec<Action>> {
+    fn get_history(&self) -> &[SmallVec<[Action; 200]>; ROUNDS] {
         return &self.history;
     }
 
-    fn get_community_cards(&self) -> &Vec<Card> {
+    fn get_community_cards(&self) -> &[Card; 5] {
         return &self.community_cards
     }
 
-    fn set_community_cards(&mut self, community_cards: Vec<Card>) {
+    fn set_community_cards(&mut self, community_cards: [Card; COMMUNITY_CARD_AMOUNT]) {
         self.community_cards = community_cards;
     }
 
-    fn set_private_hands(&mut self, private_hands: Vec<Vec<Card>>) {
+    fn get_private_hands(&self) -> &[[Card; PRIVATE_CARD_AMOUNT]; MAX_PLAYERS] {
+        return &self.private_hands
+    }
+
+    fn set_private_hands(&mut self, private_hands: [[Card; PRIVATE_CARD_AMOUNT]; MAX_PLAYERS]) {
         self.private_hands = private_hands;
     }
 
@@ -141,20 +164,20 @@ impl GameState for LPGameState {
         return self.history[self.round].iter().filter(|&action| action.is_bet_raise()).count();
     }
 
-    fn get_active_player_actions(&self, _available_actions: Vec<Action>) -> Vec<Action> {
+    fn get_active_player_actions(&self, _available_actions: SmallVec<[Action; 40]>) -> SmallVec<[Action; 40]> {
         let bet_raise_amount = self.get_current_round_bet_raise_amount();
 
         // If there was a bet this round
         if bet_raise_amount > 0 {            
             // If there were less than 2 raises we can still raise more
             if bet_raise_amount < 2 {
-                return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }]
+                return smallvec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }]
             }
 
-            return vec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]
+            return smallvec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]
         }
 
-        return vec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }];
+        return smallvec![Action { action_type: ActionType::Call, raise_amount: 0 }, Action { action_type: ActionType::Bet, raise_amount: 0 }];
     }
 
     fn is_terminal(&self) -> bool {
@@ -178,7 +201,7 @@ impl GameState for LPGameState {
         return false
     }
 
-    fn is_leaf_node(&self, _leaf_node_situation: usize) -> bool {
+    fn is_leaf_node(&self, _leaf_node_situation: u8) -> bool {
         // In LP we always search until the end of the game, so we're never in a leaf node.
         return false;
     }
@@ -193,7 +216,7 @@ impl GameState for LPGameState {
         return false
     }
 
-    fn get_payoffs(&self) -> Vec<i32> {
+    fn get_payoffs(&self) -> [i32; MAX_PLAYERS] {
         // All but 1 folded
         if self.history.concat().contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }) {
             let mut folded_player_index: usize = usize::MIN;
@@ -210,20 +233,21 @@ impl GameState for LPGameState {
                 }
             }
 
-            let payoffs: Vec<i32> = (0..self.player_amount).map(|i| {
+            let payoffs: [i32; MAX_PLAYERS] = (0..MAX_PLAYERS).map(|i| {
                 if i == folded_player_index {
                     return -((self.bets[0][i] + self.bets[1][i]) as i32)
-                } else {
+                } else if i < 2 {
                     return (self.bets[0][(i+1) % 2] + self.bets[1][(i+1) % 2]) as i32
                 }
-            }).collect();
+                return 0
+            }).collect::<Vec<i32>>().try_into().unwrap();
 
             return payoffs;
         }
 
         // Tie
         if self.private_hands.iter().all(|private_hand| deck_get_rank(private_hand[0]) == deck_get_rank(self.private_hands[0][0])) {
-            return vec![0; self.player_amount];
+            return [0; MAX_PLAYERS];
         }
 
         // Showdown
@@ -247,7 +271,7 @@ impl GameState for LPGameState {
                                     .unwrap()
         ).unwrap();
 
-        let payoffs = (0..self.player_amount).map(|player_index| {
+        let payoffs = (0..MAX_PLAYERS).map(|player_index| {
 
             let mut payoff: i32 = 0;
             if player_index == player_winner_index {
@@ -259,7 +283,7 @@ impl GameState for LPGameState {
                         }
                     }
                 }
-            } else {
+            } else if player_index < 2 {
                 // Losing player gets a payout of (-1 * their own bet)
                 for round_index in 0..self.bets.len() {
                     payoff -= self.bets[round_index][player_index] as i32
@@ -267,7 +291,7 @@ impl GameState for LPGameState {
             }
 
             return payoff;
-        }).collect();
+        }).collect::<Vec<i32>>().try_into().unwrap();
 
         return payoffs;
     }
@@ -302,7 +326,6 @@ impl GameState for LPGameState {
             round: self.round,
             history: self.history.clone(),
             community_cards: self.community_cards.clone(),
-            folded_players: self.folded_players.clone()
         };
         next_state.history[next_state.round].push(action);
 

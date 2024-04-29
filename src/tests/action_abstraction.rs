@@ -1,13 +1,14 @@
 use lazy_static::lazy_static;
+use smallvec::{smallvec, SmallVec};
 
-use crate::structs::{ActionType, Action, PREDEFINED_ACTION_WITH_RAISE_TO_ACTION_ID};
+use crate::structs::{ActionType, Action};
 
 lazy_static! {
-    pub static ref AVAILABLE_ACTIONS: Vec<Vec<Vec<Action>>> = vec![
+    pub static ref AVAILABLE_ACTIONS: [SmallVec<[SmallVec<[Action; 40]>; 8]>; 4] = [
         // Round 0
-        vec![
+        smallvec![
             // Initial bet
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 134 },
@@ -21,7 +22,7 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Raise
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -33,7 +34,7 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Three-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -43,7 +44,7 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Four-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -51,22 +52,22 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Five-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 100 },
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Six-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
             ],
         ],
         // Round 1
-        vec![
+        smallvec![
             // Initial bet
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -78,7 +79,7 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Raise
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -87,7 +88,7 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Three-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -95,15 +96,15 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Four-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
             ],
         ],
         // Round 2
-        vec![
+        smallvec![
             // Initial bet
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -111,22 +112,22 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Raise
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 100 },
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Three-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
             ],
         ],
         // Round 3
-        vec![
+        smallvec![
             // Initial bet
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 50 },
@@ -134,14 +135,14 @@ lazy_static! {
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Raise
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
                 Action { action_type: ActionType::Bet, raise_amount: 100 },
                 Action { action_type: ActionType::AllIn, raise_amount: 0 },
             ],
             // Three-bets
-            vec![
+            smallvec![
                 Action { action_type: ActionType::Fold, raise_amount: 0 },
                 Action { action_type: ActionType::Call, raise_amount: 0 },
             ],

@@ -5,7 +5,9 @@ use rand::prelude::*;
 use lazy_static::lazy_static;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
+use smallvec::SmallVec;
 
+use crate::constants::{COMMUNITY_CARD_AMOUNT, MAX_PLAYERS, NO_CARD_PLACEHOLDER, PRIVATE_CARD_AMOUNT, ROUNDS};
 use crate::game_states::base_game_state::GameState;
 use crate::structs::{ActionType, Action};
 use super::rank::rank_hand;
@@ -14,46 +16,46 @@ lazy_static! {
     pub static ref USE_ACTION_TRANSLATION: bool = env::var("USE_ACTION_TRANSLATION").is_ok();
 }
 
-
 const ROUND_PREFLOP: usize = 0;
 const _ROUND_FLOP: usize = 1;
 const _ROUND_TURN: usize = 2;
 const ROUND_RIVER: usize = 3;
 
-const STACK_SIZE: usize = 10_000;
-const SMALL_BLIND: usize = 50;
-const BIG_BLIND: usize = 100;
+const STACK_SIZE: u32 = 10_000;
+const SMALL_BLIND: u32 = 50;
+const BIG_BLIND: u32 = 100;
 
 #[derive(Clone, Debug)]
 pub struct NLTHGameState {
-    pub round: usize,
-    pub player_amount: usize,
+    pub round: usize, // Used for indexing so it's usize
+    pub player_amount: usize, // Used for indexing so it's usize
 
-    pub private_hands: Vec<Vec<Card>>,
-    pub community_cards: Vec<Card>,
-    pub stacks: Vec<usize>,
-    pub bets: Vec<Vec<usize>>,
+    pub private_hands: [[Card; PRIVATE_CARD_AMOUNT]; MAX_PLAYERS],
+    pub community_cards: [Card; COMMUNITY_CARD_AMOUNT],
+    pub stacks: [u32; MAX_PLAYERS],
+    pub bets: [[u32; MAX_PLAYERS]; ROUNDS],
 
-    pub previous_raise_amount: usize,
-    pub history: Vec<Vec<Action>>,
-    pub active_player_index: usize,
-    pub folded_players: Vec<bool>,
-    pub all_in_players: Vec<i32>,
+    pub previous_raise_amount: u32,
+    pub history: [SmallVec<[Action; 200]>; ROUNDS],
+    pub active_player_index: usize, // Used for indexing so it's usize
+    pub folded_players: [bool; MAX_PLAYERS],
+    pub all_in_players: [i32; MAX_PLAYERS],
     /*
         Each pot contains a bet amount per player. Each time a bet is made, it gets added to the newest pot.
         Initially there is just a single (main) pot.
         When a player goes all-in, a new pot created.
         It's important that for every pot we still keep track of which player made which bets. This way we can divide them evenly later.
     */
-    pub pots: Vec<Vec<usize>>,
+    pub pots: [[u32; MAX_PLAYERS]; MAX_PLAYERS], // There cannot be more than MAX_PLAYERS pots
+    pub current_pot: usize, // Used for indexing so it's usize
     // Keeping track of active_player_amount in a variable is quicker than performing the necessary Vec loops to get this number each time
-    pub active_player_amount: usize,
+    pub active_player_amount: u8,
 }
 
 impl GameState for NLTHGameState {
     fn new_empty(player_amount: usize, draw_cards: bool, rng_seed: Option<u64>) -> Self {
-        let private_hands;
-        let community_cards;
+        let private_hands: [[Card; 2]; MAX_PLAYERS];
+        let community_cards: [Card; 5];
         if draw_cards {
             let mut deck = Vec::new();
     
@@ -75,19 +77,22 @@ impl GameState for NLTHGameState {
             let drawn_items: Vec<Card> = deck.into_iter().take(
                 (2 * player_amount) + 5
             ).collect();
+            private_hands = (0..MAX_PLAYERS).map(|i| {
+                if i < player_amount-1 {
+                    return [
+                        drawn_items[i*2], drawn_items[(i*2)+1]
+                    ]
+                }
+                return [NO_CARD_PLACEHOLDER, NO_CARD_PLACEHOLDER]
+            }).collect::<Vec<[Card; 2]>>().try_into().unwrap();
 
-            private_hands = (0..player_amount).map(|i| {
-                return vec![
-                    drawn_items[i*2], drawn_items[(i*2)+1]
-                ]
-            }).collect::<Vec<Vec<Card>>>();
-            community_cards = drawn_items[drawn_items.len() - 5..].to_vec();
+            community_cards = drawn_items[drawn_items.len() - 5..].to_vec().try_into().unwrap();
         } else {
-            private_hands = (0..player_amount).map(|_| vec![]).collect();
-            community_cards = vec![];
+            private_hands = (0..MAX_PLAYERS).map(|_| [NO_CARD_PLACEHOLDER, NO_CARD_PLACEHOLDER]).collect::<Vec<[Card; 2]>>().try_into().unwrap();
+            community_cards = [NO_CARD_PLACEHOLDER; 5];
         }
 
-        let blinds = (0..player_amount).map(|player_index| {
+        let blinds = (0..MAX_PLAYERS).map(|player_index| {
             if player_index == 0 {
                 return SMALL_BLIND
             } else if player_index == 1 {
@@ -98,31 +103,37 @@ impl GameState for NLTHGameState {
 
         return NLTHGameState {
             round: ROUND_PREFLOP,
-            player_amount,
+            player_amount: player_amount,
 
             private_hands,
             community_cards,
-            stacks: (0..player_amount).map(|i| STACK_SIZE - blinds[i]).collect(),
-            bets: vec![
-                (0..player_amount).map(|i| blinds[i]).collect(),
-                vec![0; player_amount], // Flop
-                vec![0; player_amount], // Turn
-                vec![0; player_amount], // River
+            stacks: (0..MAX_PLAYERS).map(|i| STACK_SIZE - blinds[i]).collect::<Vec<u32>>().try_into().unwrap(),
+            bets: [
+                (0..MAX_PLAYERS).map(|i| blinds[i]).collect::<Vec<u32>>().try_into().unwrap(),
+                [0; 6], // Flop
+                [0; 6], // Turn
+                [0; 6], // River
             ],
 
             previous_raise_amount: BIG_BLIND,
-            history: vec![
-                vec![], vec![], vec![], vec![]
+            history: [
+                SmallVec::new(), SmallVec::new(), SmallVec::new(), SmallVec::new()
             ],
             // In headsup poker, the small blind acts first preflop. Postflop the big blind acts first
             // In 3+ player poker, in the preflop round the FTA is the player after the big blind, so in our case player at index 2 (player 3)
             active_player_index: if player_amount == 2 { 0 } else { 2 },
-            folded_players: vec![false; player_amount],
-            all_in_players: vec![-1; player_amount],
-            pots: vec![
-                (0..player_amount).map(|i| blinds[i]).collect(), // Main pot, more will be added if someone goes all-in
-            ],
-            active_player_amount: player_amount
+            folded_players: [false; MAX_PLAYERS],
+            all_in_players: [-1; MAX_PLAYERS],
+            pots: (0..MAX_PLAYERS).map(|i| {
+                (0..MAX_PLAYERS).map(|j| {
+                    if i == 0 {
+                        return blinds[j];
+                    }
+                    return 0
+                }).collect::<Vec<u32>>().try_into().unwrap()
+            }).collect::<Vec<[u32; MAX_PLAYERS]>>().try_into().unwrap(),
+            current_pot: 0,
+            active_player_amount: player_amount as u8
         }
     }
 
@@ -142,23 +153,23 @@ impl GameState for NLTHGameState {
         return self.active_player_index;
     }
 
-    fn get_private_hands(&self) -> &Vec<Vec<Card>> {
-        return &self.private_hands
-    }
-
-    fn get_history(&self) -> &Vec<Vec<Action>> {
+    fn get_history(&self) -> &[SmallVec<[Action; 200]>; ROUNDS] {
         return &self.history;
     }
 
-    fn get_community_cards(&self) -> &Vec<Card> {
+    fn get_community_cards(&self) -> &[Card; COMMUNITY_CARD_AMOUNT] {
         return &self.community_cards
     }
 
-    fn set_community_cards(&mut self, community_cards: Vec<Card>) {
+    fn set_community_cards(&mut self, community_cards: [Card; COMMUNITY_CARD_AMOUNT]) {
         self.community_cards = community_cards;
     }
 
-    fn set_private_hands(&mut self, private_hands: Vec<Vec<Card>>) {
+    fn get_private_hands(&self) -> &[[Card; PRIVATE_CARD_AMOUNT]; MAX_PLAYERS] {
+        return &self.private_hands
+    }
+
+    fn set_private_hands(&mut self, private_hands: [[Card; PRIVATE_CARD_AMOUNT]; MAX_PLAYERS]) {
         self.private_hands = private_hands;
     }
 
@@ -167,7 +178,7 @@ impl GameState for NLTHGameState {
         1 => Until the second round starts
         2 => Until the third round starts or until a second raise action 
     */
-    fn is_leaf_node(&self, leaf_node_placement: usize) -> bool {
+    fn is_leaf_node(&self, leaf_node_placement: u8) -> bool {
         if leaf_node_placement == 1 && self.round > 0 {
             return true;
         } else if leaf_node_placement == 2 && (
@@ -182,7 +193,7 @@ impl GameState for NLTHGameState {
         return self.history[self.round].iter().filter(|&action| action.is_bet_raise()).count();
     }
 
-    fn get_active_player_actions(&self, available_actions: Vec<Action>) -> Vec<Action> {
+    fn get_active_player_actions(&self, available_actions: SmallVec<[Action; 40]>) -> SmallVec<[Action; 40]> {
         let pot = self.get_total_pot();
 
         return available_actions.into_iter().filter_map(|action| {
@@ -210,7 +221,7 @@ impl GameState for NLTHGameState {
             };
 
             // ...and if it's a bet action_type, it has to be equal or more than the previous raise amount
-            let raise_amount = (pot as f32 * action.get_multiplier()) as usize;
+            let raise_amount = (pot as f32 * action.get_multiplier()) as u32;
             let is_more_or_equal_previous_raise_amount = if raise_amount == 0 {
                 true
             } else {
@@ -226,7 +237,7 @@ impl GameState for NLTHGameState {
             }
 
             return None
-        }).collect::<Vec<Action>>();
+        }).collect::<SmallVec<[Action; 40]>>();
     }
 
     fn is_terminal(&self) -> bool {
@@ -253,28 +264,30 @@ impl GameState for NLTHGameState {
         return false
     }
 
-    fn get_payoffs(&self) -> Vec<i32> {
+    fn get_payoffs(&self) -> [i32; MAX_PLAYERS] {
         // All but 1 folded. No need to deal with all-ins and multiple pots because if there was an all-in not everyone has folded
         if self.folded_players.iter().filter(|&value| value == &true).count() == self.player_amount-1 {
             let winning_player_index = self.folded_players.iter().enumerate().find(|(_, &value)| value == false).unwrap().0;
             
-            let payoffs: Vec<i32> = (0..self.player_amount).map(|player_index| {
+            let payoffs: [i32; MAX_PLAYERS] = (0..MAX_PLAYERS).map(|player_index| {
+                if player_index > self.player_amount { return 0 }
+
                 if player_index == winning_player_index {
-                    return self.get_total_pot() as i32 - self.bets.iter().map(|round_bets| round_bets[winning_player_index]).sum::<usize>() as i32;
+                    return self.get_total_pot() as i32 - self.bets.iter().map(|round_bets| round_bets[winning_player_index]).sum::<u32>() as i32;
                 }
 
                 return -self.pots.iter().map(|round_pots| round_pots[player_index] as i32).sum::<i32>();
-            }).collect();
+            }).collect::<Vec<i32>>().try_into().unwrap();
 
             return payoffs;
         }
 
         // // Showdown // //
-        let mut payoffs: Vec<i32> = vec![0; self.player_amount];
+        let mut payoffs = [0; MAX_PLAYERS];
 
         // Iterate through all pots and divide them amongst eligible players
         for (pot_index, pot) in self.pots.iter().enumerate() {
-            let pot_sum = pot.iter().sum::<usize>();
+            let pot_sum = pot.iter().sum::<u32>();
             // Decide who can contest the pot
             let participating_player_indices = (0..self.player_amount).filter_map(|player_index| {
                 if
@@ -290,7 +303,7 @@ impl GameState for NLTHGameState {
             // Calculate hand ranks for the players that can contest this pot
             let participating_player_hand_ranks = (0..self.player_amount).filter_map(|player_index| {
                 if participating_player_indices.contains(&player_index) {
-                    let mut hand = self.private_hands[player_index].clone();
+                    let mut hand = self.private_hands[player_index].to_vec();
                     hand.extend(self.community_cards.clone());
                     let rank = rank_hand(hand);
                     return Some(rank)
@@ -308,7 +321,7 @@ impl GameState for NLTHGameState {
 
             for player_index in participating_player_indices {
                 if winning_player_indices.contains(&player_index) {
-                    payoffs[player_index] += (pot_sum / winning_player_indices.len()) as i32 - pot[player_index] as i32
+                    payoffs[player_index] += (pot_sum / winning_player_indices.len() as u32) as i32 - pot[player_index] as i32
                 } else {
                     payoffs[player_index] -= pot[player_index] as i32
                 }
@@ -318,7 +331,7 @@ impl GameState for NLTHGameState {
         // Calculate losses for players who folded as they were not accounted for in the pot division
         for player_index in 0..self.player_amount {
             if self.folded_players[player_index] {
-                payoffs[player_index] -= self.pots.iter().map(|pot| pot[player_index]).sum::<usize>() as i32
+                payoffs[player_index] -= self.pots.iter().map(|pot| pot[player_index]).sum::<u32>() as i32
             }
         }
 
@@ -346,7 +359,7 @@ impl GameState for NLTHGameState {
 
             if action.is_bet_raise() {
                 let current_pot = next_state.get_total_pot();
-                let new_raise_amount = (current_pot as f32 * action.get_multiplier()).round() as usize;
+                let new_raise_amount = (current_pot as f32 * action.get_multiplier()).round() as u32;
                 bet_increase_amount += new_raise_amount;
                 next_state.previous_raise_amount = new_raise_amount;
             } else if action.action_type == ActionType::AllIn {
@@ -356,7 +369,7 @@ impl GameState for NLTHGameState {
                 next_state.previous_raise_amount = new_raise_amount;
 
                 // Set the value on the index of the active player to the current pot
-                next_state.all_in_players[next_state.active_player_index] = (next_state.pots.len() as i32) -1;
+                next_state.all_in_players[next_state.active_player_index] = next_state.current_pot as i32;
 
                 // The player becomes inactive from this point on
                 next_state.active_player_amount -= 1;
@@ -364,12 +377,11 @@ impl GameState for NLTHGameState {
 
             next_state.stacks[next_state.active_player_index] -= bet_increase_amount;
             next_state.bets[next_state.round][next_state.active_player_index] += bet_increase_amount;
-            let pot_amount = next_state.pots.len();
-            next_state.pots[pot_amount-1][next_state.active_player_index] += bet_increase_amount;
+            next_state.pots[next_state.current_pot][next_state.active_player_index] += bet_increase_amount;
 
-            // If the action_type was an all-in, we create a new pot
+            // If the action_type was an all-in, we move to the next pot
             if action.action_type == ActionType::AllIn {
-                next_state.pots.push(vec![0; next_state.player_amount])
+                next_state.current_pot += 1;
             }
         }
 
@@ -404,11 +416,11 @@ impl GameState for NLTHGameState {
 }
 
 impl NLTHGameState {
-    pub fn get_total_pot(&self) -> usize {
-        return self.pots.iter().map(|pot| pot.iter().sum::<usize>()).sum();
+    pub fn get_total_pot(&self) -> u32 {
+        return self.pots.iter().map(|pot| pot.iter().sum::<u32>()).sum();
     }
 
-    pub fn get_call_amount(&self) -> usize {
+    pub fn get_call_amount(&self) -> u32 {
         let mut call_amount = 0;
         let option = self.bets[self.round].iter().sorted().rev().next();
         if let Some(&highest_bet) = option {
@@ -427,7 +439,7 @@ impl NLTHGameState {
     pub fn all_remaining_players_checked(&self) -> bool {
         let num_checked = self.history[self.round].iter().filter(|&action| action.action_type == ActionType::Call).count();
 
-        return num_checked == self.active_player_amount &&
+        return num_checked == self.active_player_amount.into() &&
             !self.history[self.round].iter().any(|action| action.is_bet_raise())
     }
 
@@ -441,7 +453,7 @@ impl NLTHGameState {
                 if self.history[self.round][reversed_index..]
                     .iter()
                     .filter(|&action| action.action_type != ActionType::Fold) // Exclude fold actions as they have impact on active_player_amount
-                    .count() == self.active_player_amount
+                    .count() == self.active_player_amount.into()
                 {
                     return true
                 }
@@ -453,7 +465,7 @@ impl NLTHGameState {
                 if self.history[self.round][reversed_index..]
                     .iter()
                     .filter(|&action| action.action_type != ActionType::Fold) // Exclude fold actions as they have impact on active_player_amount
-                    .count() > self.active_player_amount
+                    .count() > self.active_player_amount.into()
                 {
                     return true
                 }

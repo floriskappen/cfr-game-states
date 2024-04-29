@@ -10,15 +10,15 @@ mod poker_tests_multiplayer {
     fn setup_game_state_six_players() -> NLTHGameState {
         let player_amount = 6;
         let mut nlth_game_state = NLTHGameState::new_empty(player_amount, false, None);
-        nlth_game_state.private_hands = vec![
-            vec![card_from_string("As".to_string()), card_from_string("Ks".to_string())], // Player 0
-            vec![card_from_string("2c".to_string()), card_from_string("3d".to_string())], // Player 1
-            vec![card_from_string("4h".to_string()), card_from_string("5s".to_string())], // Player 2
-            vec![card_from_string("6d".to_string()), card_from_string("7c".to_string())], // Player 3
-            vec![card_from_string("8s".to_string()), card_from_string("9d".to_string())], // Player 4
-            vec![card_from_string("Th".to_string()), card_from_string("Jh".to_string())], // Player 5
+        nlth_game_state.private_hands = [
+            [card_from_string("As".to_string()), card_from_string("Ks".to_string())], // Player 0
+            [card_from_string("2c".to_string()), card_from_string("3d".to_string())], // Player 1
+            [card_from_string("4h".to_string()), card_from_string("5s".to_string())], // Player 2
+            [card_from_string("6d".to_string()), card_from_string("7c".to_string())], // Player 3
+            [card_from_string("8s".to_string()), card_from_string("9d".to_string())], // Player 4
+            [card_from_string("Th".to_string()), card_from_string("Jh".to_string())], // Player 5
         ];
-        nlth_game_state.community_cards = vec![
+        nlth_game_state.community_cards = [
             card_from_string("Qd".to_string()), card_from_string("Kh".to_string()),
             card_from_string("Ah".to_string()), card_from_string("2s".to_string()),
             card_from_string("3h".to_string()),
@@ -150,7 +150,7 @@ mod poker_tests_multiplayer {
         game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player 4 calls
         assert_eq!(game_state.round, 1);
         assert_eq!(game_state.active_player_amount, 3); // Players 4, 5 and 6 remain
-        assert_eq!(game_state.folded_players, vec![true, true, true, false, false, false]);
+        assert_eq!(game_state.folded_players, [true, true, true, false, false, false]);
         assert_eq!(game_state.is_terminal(), false);
     }
 

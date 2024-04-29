@@ -1,6 +1,7 @@
 
 #[cfg(test)]
 mod poker_tests_headsup {
+    use cfr_game_states::constants::NO_CARD_PLACEHOLDER;
     use hand_isomorphism_rust::deck::card_from_string;
     
     use crate::game_states::base_game_state::GameState;
@@ -12,11 +13,15 @@ mod poker_tests_headsup {
     fn setup_game_state() -> NLTHGameState {
         let player_amount = 2;
         let mut nlth_game_state = NLTHGameState::new_empty(player_amount, false, None);
-        nlth_game_state.private_hands = vec![
-            vec![card_from_string("As".to_string()), card_from_string("Ks".to_string())],
-            vec![card_from_string("2c".to_string()), card_from_string("3d".to_string())],
+        nlth_game_state.private_hands = [
+            [card_from_string("As".to_string()), card_from_string("Ks".to_string())],
+            [card_from_string("2c".to_string()), card_from_string("3d".to_string())],
+            [NO_CARD_PLACEHOLDER; 2],
+            [NO_CARD_PLACEHOLDER; 2],
+            [NO_CARD_PLACEHOLDER; 2],
+            [NO_CARD_PLACEHOLDER; 2],
         ];
-        nlth_game_state.community_cards = vec![
+        nlth_game_state.community_cards = [
             card_from_string("Jd".to_string()), card_from_string("Qh".to_string()),
             card_from_string("Td".to_string()), card_from_string("5s".to_string()),
             card_from_string("3h".to_string()),
@@ -27,7 +32,7 @@ mod poker_tests_headsup {
     #[test]
     fn test_pre_flop_folding() {
         let mut game_state = setup_game_state();
-        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount()].clone();
+        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount() as usize].clone();
         assert_eq!(game_state.get_active_player_actions(available_actions.clone()).contains(&Action { action_type: ActionType::Bet, raise_amount: 400 }), true);
         game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 25 });
         assert_eq!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }), true);
@@ -116,7 +121,7 @@ mod poker_tests_headsup {
 
         // Player 1 acts first after blinds, betting 1.5x the current pot.
         // Also account for the call of the big blind, so 50 will be added to the pot apart from the bet
-        let bet_size = (1.5 * initial_pot as f64) as usize;
+        let bet_size = (1.5 * initial_pot as f64) as u32;
         game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 150 });
         assert_eq!(game_state.stacks[0], 9900 /* 9950 minus 50 for the call */ - bet_size);
         assert_eq!(game_state.get_total_pot(), initial_pot + 50 + bet_size);
@@ -202,6 +207,6 @@ mod poker_tests_headsup {
         game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), true);
 
-        assert_eq!(game_state.get_payoffs(), vec![7200, -7200]);
+        assert_eq!(game_state.get_payoffs(), [7200, -7200, 0, 0, 0, 0]);
     }
 }
