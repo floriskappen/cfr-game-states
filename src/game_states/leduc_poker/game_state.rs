@@ -10,7 +10,6 @@ use lazy_static::lazy_static;
 use rand::rngs::StdRng;
 use rand::prelude::*;
 use smallvec::smallvec;
-use smallvec::smallvec_inline;
 use smallvec::SmallVec;
 
 use crate::constants::COMMUNITY_CARD_AMOUNT;
