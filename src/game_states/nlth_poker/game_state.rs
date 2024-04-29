@@ -78,7 +78,7 @@ impl GameState for NLTHGameState {
                 (2 * player_amount) + 5
             ).collect();
             private_hands = (0..MAX_PLAYERS).map(|i| {
-                if i < player_amount-1 {
+                if i < player_amount {
                     return [
                         drawn_items[i*2], drawn_items[(i*2)+1]
                     ]
@@ -291,6 +291,7 @@ impl GameState for NLTHGameState {
             // Decide who can contest the pot
             let participating_player_indices = (0..self.player_amount).filter_map(|player_index| {
                 if
+                    player_index > self.player_amount-1 ||
                     // Players that folded at any point cannot contest the pot (their losses will be calculated later)
                     self.folded_players[player_index] ||
                     // Neither can players who went all-in in a previous pot

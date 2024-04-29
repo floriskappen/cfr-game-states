@@ -104,7 +104,7 @@ impl GameState for LPGameState {
             private_hands,
             bets: [
                 (0..MAX_PLAYERS).map(|i| {
-                    if i == 0 || i == 2 {
+                    if i == 0 || i == 1 {
                         return 1
                     }
                     return 0
