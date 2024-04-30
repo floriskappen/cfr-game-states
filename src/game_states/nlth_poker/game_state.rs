@@ -304,11 +304,15 @@ impl GameState for NLTHGameState {
                     // Players that folded at any point cannot contest the pot (their losses will be calculated later)
                     self.folded_players[player_index] ||
                     // Neither can players who went all-in in a previous pot
-                    self.all_in_players[player_index] > pot_index as i32
+                    (self.all_in_players[player_index] != -1 && self.all_in_players[player_index] < pot_index as i32)
                 { return None; }
 
                 return Some(player_index);
             }).collect::<Vec<usize>>();
+
+            if participating_player_indices.len() == 0 {
+                continue
+            }
 
             // Calculate hand ranks for the players that can contest this pot
             let participating_player_hand_ranks = (0..self.player_amount).filter_map(|player_index| {
@@ -379,7 +383,15 @@ impl GameState for NLTHGameState {
                 extra_bets += next_state.stacks[next_state.active_player_index] - call_amount;
 
                 // The all-in is added to the current pot like normal, and a new pot is created
-                next_state.pots[next_state.current_pot][next_state.active_player_index] += extra_bets;
+                let mut pot_bets_left = extra_bets;
+                for (pot_index, &all_in_amount) in next_state.current_round_pot_all_in_amounts.iter().enumerate() {
+                    if all_in_amount > current_bets {
+                        let pot_bets = (all_in_amount - current_bets).min(pot_bets_left);
+                        next_state.pots[pot_index][next_state.active_player_index] += pot_bets;
+                        pot_bets_left -= pot_bets;
+                    }
+                }
+                next_state.pots[next_state.current_pot][next_state.active_player_index] += pot_bets_left;
                 next_state.current_round_pot_all_in_amounts[next_state.current_pot] = current_bets + extra_bets;
 
                 // Set the value on the index of the active player to the current pot

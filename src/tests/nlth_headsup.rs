@@ -1,5 +1,6 @@
 
 #[cfg(test)]
+
 mod poker_tests_headsup {
     use cfr_game_states::constants::NO_CARD_PLACEHOLDER;
     use hand_isomorphism_rust::deck::card_from_string;
@@ -100,12 +101,26 @@ mod poker_tests_headsup {
         let mut game_state = setup_game_state();
         let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count());
         game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
-        assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }));
-        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+        assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::AllIn, raise_amount: 0 }));
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
         assert_eq!(game_state.is_terminal(), true);
         let payoffs = game_state.get_payoffs();
-        assert_eq!(payoffs[0] > 0, true);
+        assert_eq!(payoffs[0], 10_000);
+        assert_eq!(payoffs[1], -10_000);
     }
+
+    // #[test]
+    // fn test_bet_all_in() {
+    //     let mut game_state = setup_game_state();
+    //     let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count());
+    //     game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 1300 });
+    //     assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Call, raise_amount: 0 }));
+    //     game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+    //     assert_eq!(game_state.is_terminal(), true);
+    //     let payoffs = game_state.get_payoffs();
+    //     assert_eq!(payoffs[0], 10_000);
+    //     assert_eq!(payoffs[1], -10_000);
+    // }
 
     #[test]
     fn test_multiple_betting_rounds() {
