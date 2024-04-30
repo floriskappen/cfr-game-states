@@ -302,9 +302,7 @@ impl GameState for NLTHGameState {
                 if
                     player_index > self.player_amount-1 ||
                     // Players that folded at any point cannot contest the pot (their losses will be calculated later)
-                    self.folded_players[player_index] ||
-                    // Neither can players who went all-in in a previous pot
-                    (self.all_in_players[player_index] != -1 && self.all_in_players[player_index] < pot_index as i32)
+                    self.folded_players[player_index]
                 { return None; }
 
                 return Some(player_index);
