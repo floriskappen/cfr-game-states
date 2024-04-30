@@ -32,7 +32,7 @@ mod poker_tests_headsup {
     #[test]
     fn test_pre_flop_folding() {
         let mut game_state = setup_game_state();
-        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount() as usize].clone();
+        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count());
         assert_eq!(game_state.get_active_player_actions(available_actions.clone()).contains(&Action { action_type: ActionType::Bet, raise_amount: 400 }), true);
         game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 25 });
         assert_eq!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }), true);
@@ -45,7 +45,7 @@ mod poker_tests_headsup {
     #[test]
     fn test_pre_flop_calling() {
         let mut game_state = setup_game_state();
-        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount()].clone();
+        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count());
         assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Call, raise_amount: 0 }));
         game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player 1 calls
         game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player 2 calls
@@ -86,7 +86,7 @@ mod poker_tests_headsup {
     #[test]
     fn test_all_in_and_fold() {
         let mut game_state = setup_game_state();
-        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()][game_state.get_current_round_bet_raise_amount()].clone();
+        let available_actions = AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count());
         game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
         assert!(game_state.get_active_player_actions(available_actions).contains(&Action { action_type: ActionType::Fold, raise_amount: 0 }));
         game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });

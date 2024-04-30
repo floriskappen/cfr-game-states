@@ -5,7 +5,7 @@ use rand::prelude::*;
 use lazy_static::lazy_static;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 
 use crate::constants::{COMMUNITY_CARD_AMOUNT, MAX_PLAYERS, NO_CARD_PLACEHOLDER, PRIVATE_CARD_AMOUNT, ROUNDS};
 use crate::game_states::base_game_state::GameState;
@@ -34,8 +34,8 @@ pub struct NLTHGameState {
     pub community_cards: [Card; COMMUNITY_CARD_AMOUNT],
     pub stacks: [u32; MAX_PLAYERS],
     pub bets: [[u32; MAX_PLAYERS]; ROUNDS],
+    pub minimum_raise_amount: u32,
 
-    pub previous_raise_amount: u32,
     pub history: [SmallVec<[Action; 200]>; ROUNDS],
     pub active_player_index: usize, // Used for indexing so it's usize
     pub folded_players: [bool; MAX_PLAYERS],
@@ -47,6 +47,7 @@ pub struct NLTHGameState {
         It's important that for every pot we still keep track of which player made which bets. This way we can divide them evenly later.
     */
     pub pots: [[u32; MAX_PLAYERS]; MAX_PLAYERS], // There cannot be more than MAX_PLAYERS pots
+    pub current_round_pot_all_in_amounts: [u32; MAX_PLAYERS],
     pub current_pot: usize, // Used for indexing so it's usize
     // Keeping track of active_player_amount in a variable is quicker than performing the necessary Vec loops to get this number each time
     pub active_player_amount: u8,
@@ -103,7 +104,7 @@ impl GameState for NLTHGameState {
 
         return NLTHGameState {
             round: ROUND_PREFLOP,
-            player_amount: player_amount,
+            player_amount,
 
             private_hands,
             community_cards,
@@ -114,8 +115,8 @@ impl GameState for NLTHGameState {
                 [0; 6], // Turn
                 [0; 6], // River
             ],
+            minimum_raise_amount: BIG_BLIND,
 
-            previous_raise_amount: BIG_BLIND,
             history: [
                 SmallVec::new(), SmallVec::new(), SmallVec::new(), SmallVec::new()
             ],
@@ -132,6 +133,7 @@ impl GameState for NLTHGameState {
                     return 0
                 }).collect::<Vec<u32>>().try_into().unwrap()
             }).collect::<Vec<[u32; MAX_PLAYERS]>>().try_into().unwrap(),
+            current_round_pot_all_in_amounts: [0; MAX_PLAYERS],
             current_pot: 0,
             active_player_amount: player_amount as u8
         }
@@ -182,61 +184,68 @@ impl GameState for NLTHGameState {
         if leaf_node_placement == 1 && self.round > 0 {
             return true;
         } else if leaf_node_placement == 2 && (
-            self.round > 2 || self.get_current_round_bet_raise_amount() > 1
+            self.round > 2 || self.get_current_bet_count() > 1
         ) {
             return true;
         }
         return false;
     }
 
-    fn get_current_round_bet_raise_amount(&self) -> usize {
+    fn get_current_bet_count(&self) -> usize {
         return self.history[self.round].iter().filter(|&action| action.is_bet_raise()).count();
     }
 
-    fn get_active_player_actions(&self, available_actions: SmallVec<[Action; 40]>) -> SmallVec<[Action; 40]> {
+    fn get_active_player_actions(&self, bets_in_abstraction_option: Option<&SmallVec<[Action; 40]>>) -> SmallVec<[Action; 40]> {
         let pot = self.get_total_pot();
+        let bet_count = self.get_current_bet_count();
+        let mut actions_in_abstraction: SmallVec<[Action; 40]> = smallvec![
+            Action {action_type: ActionType::Call, raise_amount: 0 },
+            Action {action_type: ActionType::Fold, raise_amount: 0 },
+            Action {action_type: ActionType::AllIn, raise_amount: 0 },
+        ];
+        if let Some(bets_in_abstraction) = bets_in_abstraction_option {
+            actions_in_abstraction.extend(bets_in_abstraction.clone())
+        }
 
-        return available_actions.into_iter().filter_map(|action| {
+        return actions_in_abstraction.into_iter().filter_map(|action| {
+            // Going all-in is always an option
+            if action.action_type == ActionType::AllIn {
+                return Some(action);
+            };
+
             if action.action_type == ActionType::Fold {
-                return Some(action)
+                if self.round > ROUND_PREFLOP && bet_count == 0 {
+                    // Cannot fold if there were no bets (there is no point in folding)
+                    return None;
+                }
+                return Some(action);
             };
 
             // We should be able to afford it
-            let previous_bet_cover_cost = self.get_call_amount();
-
+            let call_amount = self.get_call_amount();
 
             if action.action_type == ActionType::Call {
                 // We need to have chips left after calling, otherwise it would be an all-in
-                if self.stacks[self.active_player_index] as i32 - previous_bet_cover_cost as i32 > 0 {
-                    return Some(action)
+                if self.stacks[self.active_player_index] as i32 - call_amount as i32 > 0 {
+                    return Some(action);
                 }
-                return None
-            };
-
-            if action.action_type == ActionType::AllIn {
-                if self.stacks[self.active_player_index] as i32 - previous_bet_cover_cost as i32 >= 0 {
-                    return Some(action)
-                }
-                return None
+                return None;
             };
 
             // ...and if it's a bet action_type, it has to be equal or more than the previous raise amount
-            let raise_amount = (pot as f32 * action.get_multiplier()) as u32;
-            let is_more_or_equal_previous_raise_amount = if raise_amount == 0 {
-                true
-            } else {
-                raise_amount >= self.previous_raise_amount
-            };
+            let raise_amount = ((pot + call_amount) as f32 * action.get_multiplier()) as u32;
 
-            let total_cost = previous_bet_cover_cost + raise_amount;
-
-            let can_afford = self.stacks[self.active_player_index] as i32 - total_cost as i32 >= 0;
-
-            if is_more_or_equal_previous_raise_amount && can_afford {
-                return Some(action)
+            // The call amount + the raise amount should be at least twice the size of the previous raise
+            if raise_amount + call_amount < self.minimum_raise_amount * 2 {
+                return None;
             }
 
-            return None
+            // We should also be able to afford it
+            if (self.stacks[self.active_player_index] as i32 - raise_amount as i32) < 0 {
+                return None;
+            }
+            
+            return Some(action);
         }).collect::<SmallVec<[Action; 40]>>();
     }
 
@@ -356,34 +365,60 @@ impl GameState for NLTHGameState {
             // The player becomes inactive from this point on
             next_state.active_player_amount -= 1;
         } else {
-            let mut bet_increase_amount = next_state.get_call_amount();
+            let current_bets = next_state.bets[next_state.round][next_state.active_player_index];
+            let call_amount = next_state.get_call_amount();
+            let mut extra_bets = call_amount;
 
-            if action.is_bet_raise() {
-                let current_pot = next_state.get_total_pot();
-                let new_raise_amount = (current_pot as f32 * action.get_multiplier()).round() as u32;
-                bet_increase_amount += new_raise_amount;
-                next_state.previous_raise_amount = new_raise_amount;
-            } else if action.action_type == ActionType::AllIn {
-                // Everything left in the player's stack
-                let new_raise_amount = next_state.stacks[next_state.active_player_index] - bet_increase_amount;
-                bet_increase_amount += new_raise_amount;
-                next_state.previous_raise_amount = new_raise_amount;
+            if action.action_type == ActionType::AllIn {
+                // The all-in is equal or more than the minimum raise amount
+                if next_state.stacks[next_state.active_player_index] >= next_state.minimum_raise_amount * 2 {
+                    // Set the minimum raise amount to the all-in amount
+                    next_state.minimum_raise_amount = next_state.stacks[next_state.active_player_index] - call_amount;
+                }
+
+                extra_bets += next_state.stacks[next_state.active_player_index] - call_amount;
+
+                // The all-in is added to the current pot like normal, and a new pot is created
+                next_state.pots[next_state.current_pot][next_state.active_player_index] += extra_bets;
+                next_state.current_round_pot_all_in_amounts[next_state.current_pot] = current_bets + extra_bets;
 
                 // Set the value on the index of the active player to the current pot
                 next_state.all_in_players[next_state.active_player_index] = next_state.current_pot as i32;
 
+                next_state.current_pot += 1;
+
                 // The player becomes inactive from this point on
                 next_state.active_player_amount -= 1;
+            } else {
+                if action.is_bet_raise() {
+                    let current_pot = next_state.get_total_pot();
+                    let raise_amount = ((current_pot + call_amount) as f32 * action.get_multiplier()) as u32;
+                    extra_bets += raise_amount;
+                    next_state.minimum_raise_amount = raise_amount;
+                }
+                
+                /*
+                    Managing sidepots
+                    If players have gone all-in this round, they are entitled to a portion of the pot up until the amount they went all-in with.
+                    So we divide the extra_bets amongst the different pots that may be active at the moment.
+                    The remainder gets sent to the main pot.
+                */
+                let mut pot_bets_left = extra_bets;
+                // Add the new wager to the current pot, managing any sidepots that may be active
+                for (pot_index, &all_in_amount) in next_state.current_round_pot_all_in_amounts.iter().enumerate() {
+                    if all_in_amount > current_bets {
+                        let pot_bets = (all_in_amount - current_bets).min(pot_bets_left);
+                        next_state.pots[pot_index][next_state.active_player_index] += pot_bets;
+                        pot_bets_left -= pot_bets;
+                    }
+                }
+                next_state.pots[next_state.current_pot][next_state.active_player_index] += pot_bets_left;
             }
 
-            next_state.stacks[next_state.active_player_index] -= bet_increase_amount;
-            next_state.bets[next_state.round][next_state.active_player_index] += bet_increase_amount;
-            next_state.pots[next_state.current_pot][next_state.active_player_index] += bet_increase_amount;
-
-            // If the action_type was an all-in, we move to the next pot
-            if action.action_type == ActionType::AllIn {
-                next_state.current_pot += 1;
-            }
+            // Decrease the wager from the player's stack
+            next_state.stacks[next_state.active_player_index] -= extra_bets;
+            // Add the wager to the player's bet amount for the round
+            next_state.bets[next_state.round][next_state.active_player_index] += extra_bets;
         }
 
         next_state.history[next_state.round].push(action);
@@ -402,7 +437,9 @@ impl GameState for NLTHGameState {
         if next_state.can_proceed_to_next_round() {
             // Transition to next round
             next_state.round += 1;
-            next_state.previous_raise_amount = BIG_BLIND;
+            next_state.minimum_raise_amount = BIG_BLIND;
+            // We don't have to keep track of sidepots created during this round anymore
+            next_state.current_round_pot_all_in_amounts = [0; MAX_PLAYERS];
             if next_state.player_amount == 2 {
                 // In heads-up poker the big blind (player 2) acts first post-flop
                 next_state.active_player_index = 1;

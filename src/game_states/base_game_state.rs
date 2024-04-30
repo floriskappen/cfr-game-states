@@ -7,7 +7,7 @@ pub trait GameState {
     fn new_empty(player_amount: usize, draw_cards: bool, seed: Option<u64>) -> Self;
     fn get_total_rounds() -> usize;
     fn get_player_amount(&self) -> usize;
-    fn get_current_round_bet_raise_amount(&self) -> usize;
+    fn get_current_bet_count(&self) -> usize;
     fn get_history(&self) -> &[SmallVec<[Action; 200]>; ROUNDS];
     fn get_community_cards(&self) -> &[Card; COMMUNITY_CARD_AMOUNT];
     fn set_community_cards(&mut self, community_cards: [Card; COMMUNITY_CARD_AMOUNT]);
@@ -18,7 +18,7 @@ pub trait GameState {
     fn is_terminal(&self) -> bool;
     fn get_payoffs(&self) -> [i32; MAX_PLAYERS];
     fn get_active_player_index(&self) -> usize;
-    fn get_active_player_actions(&self, available_actions: SmallVec<[Action; 40]>) -> SmallVec<[Action; 40]>;
+    fn get_active_player_actions(&self, bets_in_abstraction_option: Option<&SmallVec<[Action; 40]>>) -> SmallVec<[Action; 40]>;
     fn handle_action(&self, action: Action) -> Self;
     fn can_proceed_to_next_round(&self) -> bool;
 }

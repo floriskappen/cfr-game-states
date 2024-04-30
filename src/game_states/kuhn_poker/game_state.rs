@@ -94,7 +94,7 @@ impl GameState for KPGameState {
         return false;
     }
 
-    fn get_current_round_bet_raise_amount(&self) -> usize {
+    fn get_current_bet_count(&self) -> usize {
         return self.history[0].iter().filter(|action| action.action_type == ActionType::Bet).count() as usize;
     }
 
@@ -144,7 +144,7 @@ impl GameState for KPGameState {
         return self.history[0].len() % 2;
     }
 
-    fn get_active_player_actions(&self, _available_actions: SmallVec<[Action; 40]>) -> SmallVec<[Action; 40]> {
+    fn get_active_player_actions(&self, _actions_in_abstraction: Option<&SmallVec<[Action; 40]>>) -> SmallVec<[Action; 40]> {
         if let Some(&previous_action) = self.history[0].iter().rev().next() {
             if previous_action.action_type == ActionType::Bet {
                 return smallvec![Action { action_type: ActionType::Fold, raise_amount: 0 }, Action { action_type: ActionType::Call, raise_amount: 0 }]
