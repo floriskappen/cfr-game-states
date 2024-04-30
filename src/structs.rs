@@ -79,7 +79,7 @@ pub struct Action {
 impl Action {
     pub fn as_string(&self) -> String {
         if self.raise_amount != 0 {
-            return format!("{:?} x{}", self.action_type, self.raise_amount)
+            return format!("{:?} x{}", self.action_type, self.raise_amount as f32 / 100.0)
         }
         return format!("{:?}", self.action_type)
     }
