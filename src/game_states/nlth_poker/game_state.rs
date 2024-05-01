@@ -295,7 +295,7 @@ impl GameState for NLTHGameState {
         let mut payoffs = [0; MAX_PLAYERS];
 
         // Iterate through all pots and divide them amongst eligible players
-        for (pot_index, pot) in self.pots.iter().enumerate() {
+        for pot in self.pots.iter(){
             let pot_sum = pot.iter().sum::<u32>();
             // Decide who can contest the pot
             let participating_player_indices = (0..self.player_amount).filter_map(|player_index| {
