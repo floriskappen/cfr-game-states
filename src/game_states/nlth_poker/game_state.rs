@@ -1,8 +1,6 @@
-use std::env;
 
 use itertools::Itertools;
 use rand::prelude::*;
-use lazy_static::lazy_static;
 
 use hand_isomorphism_rust::deck::{card_from_string, Card, RANK_TO_CHAR, SUIT_TO_CHAR};
 use smallvec::{smallvec, SmallVec};
@@ -11,10 +9,6 @@ use crate::constants::{COMMUNITY_CARD_AMOUNT, MAX_PLAYERS, NO_CARD_PLACEHOLDER, 
 use crate::game_states::base_game_state::GameState;
 use crate::structs::{ActionType, Action};
 use super::rank::rank_hand;
-
-lazy_static! {
-    pub static ref USE_ACTION_TRANSLATION: bool = env::var("USE_ACTION_TRANSLATION").is_ok();
-}
 
 const ROUND_PREFLOP: usize = 0;
 const _ROUND_FLOP: usize = 1;
@@ -371,8 +365,8 @@ impl GameState for NLTHGameState {
             let mut extra_bets = call_amount;
 
             if action.action_type == ActionType::AllIn {
-                // The all-in is equal or more than the minimum raise amount
-                if next_state.stacks[next_state.active_player_index] >= next_state.minimum_raise_amount * 2 {
+                // The all-in is more than the minimum raise amount
+                if next_state.stacks[next_state.active_player_index] - call_amount > self.minimum_raise_amount {
                     // Set the minimum raise amount to the all-in amount
                     next_state.minimum_raise_amount = next_state.stacks[next_state.active_player_index] - call_amount;
                 }
@@ -479,10 +473,6 @@ impl NLTHGameState {
     }
 
     // Returns True if all remaining (not folded) players checked in the current round (noone bet or raised)
-    // TODO: Test if this works correctly in all situations:
-    // - Check, Check, Fold, Check, Check, Check -> True
-    // - Bet, Fold, Raise, Call, Call, Call -> False
-    // - Check, Check, Bet, Call, Fold, Fold, Fold, Call -> False
     pub fn all_remaining_players_checked(&self) -> bool {
         let num_checked = self.history[self.round].iter().filter(|&action| action.action_type == ActionType::Call).count();
 
