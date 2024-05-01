@@ -197,12 +197,12 @@ impl GameState for NLTHGameState {
 
     fn get_active_player_actions(&self, bets_in_abstraction_option: Option<&SmallVec<[Action; 40]>>) -> SmallVec<[Action; 40]> {
         let pot = self.get_total_pot();
-        let bet_count = self.get_current_bet_count();
         let mut actions_in_abstraction: SmallVec<[Action; 40]> = smallvec![
-            Action {action_type: ActionType::Call, raise_amount: 0 },
             Action {action_type: ActionType::Fold, raise_amount: 0 },
+            Action {action_type: ActionType::Call, raise_amount: 0 },
             Action {action_type: ActionType::AllIn, raise_amount: 0 },
         ];
+
         if let Some(bets_in_abstraction) = bets_in_abstraction_option {
             actions_in_abstraction.extend(bets_in_abstraction.clone())
         }
@@ -213,16 +213,15 @@ impl GameState for NLTHGameState {
                 return Some(action);
             };
 
+            let call_amount = self.get_call_amount();
+
             if action.action_type == ActionType::Fold {
-                if self.round > ROUND_PREFLOP && bet_count == 0 {
-                    // Cannot fold if there were no bets (there is no point in folding)
+                if call_amount == 0 {
+                    // We shouldn't have the option to fold if we don't need to call any amount
                     return None;
                 }
                 return Some(action);
             };
-
-            // We should be able to afford it
-            let call_amount = self.get_call_amount();
 
             if action.action_type == ActionType::Call {
                 // We need to have chips left after calling, otherwise it would be an all-in
