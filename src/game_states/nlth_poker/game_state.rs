@@ -234,8 +234,8 @@ impl GameState for NLTHGameState {
             // ...and if it's a bet action_type, it has to be equal or more than the previous raise amount
             let raise_amount = ((pot + call_amount) as f32 * action.get_multiplier()) as u32;
 
-            // The call amount + the raise amount should be at least twice the size of the previous raise
-            if raise_amount + call_amount < self.minimum_raise_amount * 2 {
+            // The the raise amount should be at least twice the size of the previous raise
+            if raise_amount < self.minimum_raise_amount {
                 return None;
             }
 
