@@ -9,7 +9,7 @@ lazy_static! {
         smallvec![
             // Initial bet
             smallvec![
-                Action { action_type: ActionType::Bet, raise_amount: 50 },
+                Action { action_type: ActionType::Bet, raise_amount: 75 },
                 Action { action_type: ActionType::Bet, raise_amount: 100 },
                 Action { action_type: ActionType::Bet, raise_amount: 134 },
                 Action { action_type: ActionType::Bet, raise_amount: 150 },
@@ -22,17 +22,17 @@ lazy_static! {
             ],
             // Raise
             smallvec![
-                Action { action_type: ActionType::Bet, raise_amount: 25 },
-                Action { action_type: ActionType::Bet, raise_amount: 50 },
+                Action { action_type: ActionType::Bet, raise_amount: 75 },
                 Action { action_type: ActionType::Bet, raise_amount: 100 },
                 Action { action_type: ActionType::Bet, raise_amount: 200 },
                 Action { action_type: ActionType::Bet, raise_amount: 400 },
                 Action { action_type: ActionType::Bet, raise_amount: 700 },
                 Action { action_type: ActionType::Bet, raise_amount: 1000 },
+                Action { action_type: ActionType::Bet, raise_amount: 1500 },
             ],
             // Three-bets
             smallvec![
-                Action { action_type: ActionType::Bet, raise_amount: 50 },
+                Action { action_type: ActionType::Bet, raise_amount: 75 },
                 Action { action_type: ActionType::Bet, raise_amount: 100 },
                 Action { action_type: ActionType::Bet, raise_amount: 200 },
                 Action { action_type: ActionType::Bet, raise_amount: 400 },

@@ -225,19 +225,19 @@ impl GameState for NLTHGameState {
                 return None;
             };
 
-            // ...and if it's a bet action_type, it has to be equal or more than the previous raise amount
-            let raise_amount = ((pot + call_amount) as f32 * action.get_multiplier()) as u32;
+            let current_bets = self.bets[self.round][self.active_player_index];
+            let extra_bets = ((pot + call_amount) as f32 * action.get_multiplier()) as u32 - current_bets;
 
-            // The the raise amount should be at least twice the size of the previous raise
-            if raise_amount < self.minimum_raise_amount {
+            // The the new extra bets minus the call amount should be high or higher than the minimum raise amount
+            if extra_bets < call_amount || extra_bets - call_amount < self.minimum_raise_amount {
                 return None;
             }
 
             // We should also be able to afford it
-            if (self.stacks[self.active_player_index] as i32 - raise_amount as i32) < 0 {
+            if (self.stacks[self.active_player_index] as i32 - extra_bets as i32) < 0 {
                 return None;
             }
-            
+
             return Some(action);
         }).collect::<SmallVec<[Action; 40]>>();
     }
@@ -371,7 +371,7 @@ impl GameState for NLTHGameState {
                     next_state.minimum_raise_amount = next_state.stacks[next_state.active_player_index] - call_amount;
                 }
 
-                extra_bets += next_state.stacks[next_state.active_player_index] - call_amount;
+                extra_bets = next_state.stacks[next_state.active_player_index];
 
                 // The all-in is added to the current pot like normal, and a new pot is created
                 let mut pot_bets_left = extra_bets;
@@ -395,11 +395,10 @@ impl GameState for NLTHGameState {
             } else {
                 if action.is_bet_raise() {
                     let current_pot = next_state.get_total_pot();
-                    let raise_amount = ((current_pot + call_amount) as f32 * action.get_multiplier()) as u32;
-                    extra_bets += raise_amount;
-                    next_state.minimum_raise_amount = raise_amount;
+                    let current_bets = next_state.bets[next_state.round][next_state.active_player_index];
+                    extra_bets = ((current_pot + call_amount) as f32 * action.get_multiplier()) as u32 - current_bets;
                 }
-                
+
                 /*
                     Managing sidepots
                     If players have gone all-in this round, they are entitled to a portion of the pot up until the amount they went all-in with.
