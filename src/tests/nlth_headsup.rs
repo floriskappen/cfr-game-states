@@ -31,9 +31,26 @@ mod poker_tests_headsup {
     }
 
     #[test]
+    fn minimum_raise_amount_test_case() {
+        let mut game_state = setup_game_state();
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 150 });
+        assert_eq!(game_state.minimum_raise_amount, 200);
+
+        let mut game_state = setup_game_state();
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 150 });
+        assert_eq!(game_state.minimum_raise_amount, 200);
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+        assert_eq!(game_state.minimum_raise_amount, 300);
+    }
+
+    #[test]
     fn betting_test_case() {
         let mut game_state = setup_game_state();
         assert_eq!(game_state.bets[0], [50, 100, 0, 0, 0, 0]);
+        println!("actions: {:?}", game_state.get_active_player_actions(
+            AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count())
+        ));
         assert_eq!(game_state.get_active_player_actions(
             AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count())
         )[3].raise_amount, 100);

@@ -397,6 +397,8 @@ impl GameState for NLTHGameState {
                     let current_pot = next_state.get_total_pot();
                     let current_bets = next_state.bets[next_state.round][next_state.active_player_index];
                     extra_bets = ((current_pot + call_amount) as f32 * action.get_multiplier()) as u32 - current_bets;
+
+                    next_state.minimum_raise_amount = extra_bets - call_amount
                 }
 
                 /*
