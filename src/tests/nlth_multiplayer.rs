@@ -5,6 +5,7 @@ mod poker_tests_multiplayer {
     use crate::game_states::base_game_state::GameState;
     use crate::game_states::nlth_poker::game_state::NLTHGameState;
     use crate::structs::{ActionType, Action};
+    use crate::tests::action_abstraction::AVAILABLE_ACTIONS;
 
     // Helper function to create a standardized game state with six players
     fn setup_game_state_six_players() -> NLTHGameState {
@@ -25,6 +26,10 @@ mod poker_tests_multiplayer {
         ];
         nlth_game_state
     }
+
+    /*
+        //  TURN ORDER  \\
+    */
 
     #[test]
     fn test_turn_order_simple() {
@@ -81,6 +86,10 @@ mod poker_tests_multiplayer {
         assert_eq!(game_state.active_player_index, 0);
         assert_eq!(game_state.is_terminal(), false);
     }
+
+    /*
+        //  Checking/calling  \\
+    */
 
     #[test]
     fn test_complex_checking_1() {
@@ -154,6 +163,10 @@ mod poker_tests_multiplayer {
         assert_eq!(game_state.is_terminal(), false);
     }
 
+    /*
+        //  Folding  \\
+    */
+
     #[test]
     fn test_initial_folds() {
         let mut game_state = setup_game_state_six_players();
@@ -170,5 +183,81 @@ mod poker_tests_multiplayer {
         // Game should now proceed to post-flop
         assert_eq!(game_state.round, 1);
         assert_eq!(game_state.is_terminal(), false);
+    }
+
+    /*
+        //  Action validation after raises  \\
+    */
+
+    #[test]
+    fn test_minimum_raise_requirement() {
+        let mut game_state = setup_game_state_six_players();
+        // Player 2 raises the minimum amount
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 });
+
+        let actions = game_state.get_active_player_actions(
+            AVAILABLE_ACTIONS[game_state.get_current_round_index()].get(game_state.get_current_bet_count())
+        );
+        let contains_illegal_action = actions.iter().find(|action| action.raise_amount > 0 && action.raise_amount < 79);
+        assert!(contains_illegal_action.is_none());
+    }
+
+    #[test]
+    fn test_all_in_below_minimum_raise() {
+        let mut game_state = setup_game_state_six_players();
+        game_state.stacks[3] = 180; // Player 3 has only 180 left
+
+        // Player 2 raises 300
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 300 });
+
+        // Player 3 goes all-in with less than the minimum raise
+        game_state = game_state.handle_action(Action { action_type: ActionType::AllIn, raise_amount: 0 });
+        assert_eq!(game_state.all_in_players[3], 0); // Ensure that player 3 is marked as all-in
+        assert!(game_state.current_pot > 0); // Ensure that a new pot is possibly created if needed
+
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+
+        // The first pots should not go above 180
+        for bet in game_state.pots[0] {
+            assert!(bet <= 180);
+        }
+
+        // Bets should be distributed properly
+        assert_eq!(game_state.pots[1][2], 570);
+        assert_eq!(game_state.pots[1][4], 570);
+        assert_eq!(game_state.pots[1][5], 2400);
+    }
+
+    #[test]
+    fn test_turn_order() {
+        let mut game_state = setup_game_state_six_players();
+
+        // Player 2 calls
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+
+        // Player 3 folds
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });
+
+        // Player 4 folds
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });
+
+        // Player 5 folds
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });
+
+        // Player 0 calls
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+
+        // Player 1 raises
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+
+        // Check that we're still in round 0
+        assert_eq!(game_state.round, 0);
+        assert_eq!(game_state.active_player_index, 2);
+
+        // Player 2 calls
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+
+        assert_eq!(game_state.active_player_index, 0);
     }
 }

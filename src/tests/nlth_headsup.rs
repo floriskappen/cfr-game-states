@@ -99,14 +99,14 @@ mod poker_tests_headsup {
         assert_eq!(game_state.is_terminal(), false);
     }
 
-        #[test]
-        fn test_preflop_raise_reraise_and_call() {
-            let mut game_state = setup_game_state();
-            game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
-            game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 400 }); // Player B re-raises (3-bet)
-            game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player A calls
-            assert_eq!(game_state.is_terminal(), false);
-        }
+    #[test]
+    fn test_preflop_raise_reraise_and_call() {
+        let mut game_state = setup_game_state();
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 200 }); // Player A raises
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 400 }); // Player B re-raises (3-bet)
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 }); // Player A calls
+        assert_eq!(game_state.is_terminal(), false);
+    }
 
     #[test]
     fn test_preflop_raise_allin_and_fold() {

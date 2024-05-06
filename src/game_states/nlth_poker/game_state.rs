@@ -40,8 +40,8 @@ pub struct NLTHGameState {
         When a player goes all-in, a new pot created.
         It's important that for every pot we still keep track of which player made which bets. This way we can divide them evenly later.
     */
-    pub pots: [[u32; MAX_PLAYERS]; MAX_PLAYERS], // There cannot be more than MAX_PLAYERS pots
-    pub current_round_pot_all_in_amounts: [u32; MAX_PLAYERS],
+    pub pots: [[u32; MAX_PLAYERS]; MAX_PLAYERS + 1], // There cannot be more than MAX_PLAYERS+1 pots
+    pub current_round_pot_all_in_amounts: [u32; MAX_PLAYERS + 1],
     pub current_pot: usize, // Used for indexing so it's usize
     // Keeping track of active_player_amount in a variable is quicker than performing the necessary Vec loops to get this number each time
     pub active_player_amount: u8,
@@ -119,7 +119,7 @@ impl GameState for NLTHGameState {
             active_player_index: if player_amount == 2 { 0 } else { 2 },
             folded_players: [false; MAX_PLAYERS],
             all_in_players: [-1; MAX_PLAYERS],
-            pots: (0..MAX_PLAYERS).map(|i| {
+            pots: (0..MAX_PLAYERS+1).map(|i| {
                 (0..MAX_PLAYERS).map(|j| {
                     if i == 0 {
                         return blinds[j];
@@ -127,7 +127,7 @@ impl GameState for NLTHGameState {
                     return 0
                 }).collect::<Vec<u32>>().try_into().unwrap()
             }).collect::<Vec<[u32; MAX_PLAYERS]>>().try_into().unwrap(),
-            current_round_pot_all_in_amounts: [0; MAX_PLAYERS],
+            current_round_pot_all_in_amounts: [0; MAX_PLAYERS+1],
             current_pot: 0,
             active_player_amount: player_amount as u8
         }
@@ -365,12 +365,6 @@ impl GameState for NLTHGameState {
             let mut extra_bets = call_amount;
 
             if action.action_type == ActionType::AllIn {
-                // The all-in is more than the minimum raise amount
-                if next_state.stacks[next_state.active_player_index] - call_amount > self.minimum_raise_amount {
-                    // Set the minimum raise amount to the all-in amount
-                    next_state.minimum_raise_amount = next_state.stacks[next_state.active_player_index] - call_amount;
-                }
-
                 extra_bets = next_state.stacks[next_state.active_player_index];
 
                 // The all-in is added to the current pot like normal, and a new pot is created
@@ -384,6 +378,24 @@ impl GameState for NLTHGameState {
                 }
                 next_state.pots[next_state.current_pot][next_state.active_player_index] += pot_bets_left;
                 next_state.current_round_pot_all_in_amounts[next_state.current_pot] = current_bets + extra_bets;
+
+                // The all-in is more than the minimum raise amount
+                if call_amount < next_state.stacks[next_state.active_player_index] && next_state.stacks[next_state.active_player_index] - call_amount > self.minimum_raise_amount {
+                    // Set the minimum raise amount to the all-in amount
+                    next_state.minimum_raise_amount = next_state.stacks[next_state.active_player_index] - call_amount;
+                } else {
+                    // Divide any money up to this point that goes above the all-in amount in the next pots
+                    let mut new_pot_amounts = [0; MAX_PLAYERS];
+                    for (player_index, bets) in next_state.pots[next_state.current_pot].iter_mut().enumerate() {
+                        let existing_bets = bets.clone();
+                        if existing_bets > next_state.stacks[next_state.active_player_index] {
+                            let bets_to_redistribute = existing_bets - next_state.stacks[next_state.active_player_index];
+                            new_pot_amounts[player_index] += bets_to_redistribute;
+                            *bets -= bets_to_redistribute;
+                        }
+                    }
+                    next_state.pots[next_state.current_pot+1] = new_pot_amounts;
+                }
 
                 // Set the value on the index of the active player to the current pot
                 next_state.all_in_players[next_state.active_player_index] = next_state.current_pot as i32;
@@ -443,7 +455,7 @@ impl GameState for NLTHGameState {
             next_state.round += 1;
             next_state.minimum_raise_amount = BIG_BLIND;
             // We don't have to keep track of sidepots created during this round anymore
-            next_state.current_round_pot_all_in_amounts = [0; MAX_PLAYERS];
+            next_state.current_round_pot_all_in_amounts = [0; MAX_PLAYERS+1];
             if next_state.player_amount == 2 {
                 // In heads-up poker the big blind (player 2) acts first post-flop
                 next_state.active_player_index = 1;
