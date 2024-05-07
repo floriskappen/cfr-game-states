@@ -376,8 +376,8 @@ impl GameState for NLTHGameState {
                         pot_bets_left -= pot_bets;
                     }
                 }
+                next_state.current_round_pot_all_in_amounts[next_state.current_pot] = pot_bets_left + next_state.pots[next_state.current_pot][next_state.active_player_index];
                 next_state.pots[next_state.current_pot][next_state.active_player_index] += pot_bets_left;
-                next_state.current_round_pot_all_in_amounts[next_state.current_pot] = current_bets + extra_bets;
 
                 // The all-in is more than the minimum raise amount
                 if call_amount < next_state.stacks[next_state.active_player_index] && next_state.stacks[next_state.active_player_index] - call_amount > self.minimum_raise_amount {
@@ -444,11 +444,12 @@ impl GameState for NLTHGameState {
         for _ in 0..next_state.player_amount {
             // The player should not have folded or have gone all-in in order to be active
             if !next_state.folded_players[current_new_active_player_index] && next_state.all_in_players[current_new_active_player_index] == -1 {
-                next_state.active_player_index = current_new_active_player_index;
                 break;
             }
             current_new_active_player_index = (current_new_active_player_index + 1) % next_state.player_amount;
         }
+
+        next_state.active_player_index = current_new_active_player_index;
 
         if next_state.can_proceed_to_next_round() {
             // Transition to next round
@@ -485,12 +486,12 @@ impl NLTHGameState {
         return call_amount
     }
 
-    // Returns True if all remaining (not folded) players checked in the current round (noone bet or raised)
+    // Returns True if all remaining (not folded) players checked in the current round (noone bet or raised or went all-in)
     pub fn all_remaining_players_checked(&self) -> bool {
         let num_checked = self.history[self.round].iter().filter(|&action| action.action_type == ActionType::Call).count();
 
         return num_checked == self.active_player_amount.into() &&
-            !self.history[self.round].iter().any(|action| action.is_bet_raise())
+            !self.history[self.round].iter().any(|action| action.is_bet_raise() || action.action_type == ActionType::AllIn)
     }
 
     // Determines if the current betting round is finished, i.e., a bet or raise has been called or everyone has folded.
