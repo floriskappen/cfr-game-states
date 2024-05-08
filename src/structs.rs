@@ -15,6 +15,7 @@ lazy_static! {
         result.insert(55, Action { action_type: ActionType::Bet, raise_amount: 25 });
         result.insert(56, Action { action_type: ActionType::Bet, raise_amount: 50 });
         result.insert(57, Action { action_type: ActionType::Bet, raise_amount: 75 });
+        result.insert(65, Action { action_type: ActionType::Bet, raise_amount: 80 });
         result.insert(58, Action { action_type: ActionType::Bet, raise_amount: 100 });
         result.insert(59, Action { action_type: ActionType::Bet, raise_amount: 134 });
         result.insert(60, Action { action_type: ActionType::Bet, raise_amount: 150 });
@@ -22,7 +23,6 @@ lazy_static! {
         result.insert(62, Action { action_type: ActionType::Bet, raise_amount: 400 });
         result.insert(63, Action { action_type: ActionType::Bet, raise_amount: 700 });
         result.insert(64, Action { action_type: ActionType::Bet, raise_amount: 800 });
-        // result.insert(65, Action { action_type: ActionType::Bet, raise_amount: 10.0 }); // 65 is skipped for some reason? fix
         result.insert(66, Action { action_type: ActionType::Bet, raise_amount: 1000 });
         result.insert(67, Action { action_type: ActionType::Bet, raise_amount: 1300 });
         result.insert(68, Action { action_type: ActionType::Bet, raise_amount: 1500 });
