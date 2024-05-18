@@ -55,7 +55,7 @@ impl GameState for KPGameState {
             history: [
                 SmallVec::new(), SmallVec::new(), SmallVec::new(), SmallVec::new()
             ],
-            bets: vec![1, 1] // Default 1$ bet
+            bets: vec![100, 100] // Default 1$ bet
         }
     }
 
@@ -172,7 +172,7 @@ impl GameState for KPGameState {
             let mut bet_increase_amount: usize = opponent_current_round_bet - active_player_current_round_bet;
 
             if action.action_type == ActionType::Bet {
-                bet_increase_amount += 1;
+                bet_increase_amount += 100;
             }
 
             new_bets[active_player_index] += bet_increase_amount;
