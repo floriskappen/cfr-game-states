@@ -505,4 +505,25 @@ mod poker_tests_multiplayer {
         game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
         assert_eq!(game_state.stacks[2], 10000 - 3_550); // This player's new stack after raising
     }
+
+    /*
+        //  Payoffs  \\
+    */
+
+    #[test]
+    fn test_payoffs() {
+        let mut game_state = setup_game_state_six_players();
+
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 0 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Bet, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 100 });
+        game_state = game_state.handle_action(Action { action_type: ActionType::Fold, raise_amount: 100 });
+
+        while !game_state.is_terminal() {
+            game_state = game_state.handle_action(Action { action_type: ActionType::Call, raise_amount: 0 });
+        }
+
+        assert_eq!(game_state.get_payoffs(), [-50, -350, -350, 0, -350, 1100]); // This player's new stack after raising
+    }
 }

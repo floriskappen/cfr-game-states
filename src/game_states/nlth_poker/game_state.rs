@@ -306,21 +306,23 @@ impl GameState for NLTHGameState {
             }
 
             // Calculate hand ranks for the players that can contest this pot
-            let participating_player_hand_ranks = (0..self.player_amount).filter_map(|player_index| {
+            let player_hand_ranks = (0..self.player_amount).map(|player_index| {
                 if participating_player_indices.contains(&player_index) {
                     let mut hand = self.private_hands[player_index].to_vec();
                     hand.extend(self.community_cards.clone());
                     let rank = rank_hand(hand);
-                    return Some(rank)
+                    return rank
                 }
-                return None;
+                return 0;
             }).collect::<Vec<_>>();
 
-            let highest_hand_rank = participating_player_hand_ranks.iter().max().unwrap();
+            println!("participating_player_hand_ranks: {:?}", player_hand_ranks);
+
+            let highest_hand_rank = player_hand_ranks.iter().max().unwrap();
             // Grab the index of the players with the highest rank. This way we account for ties
-            let winning_player_indices = participating_player_indices.iter().enumerate()
-                .filter(|(_, &player_index)| &participating_player_hand_ranks[player_index] == highest_hand_rank)
-                .map(|(_, &player_index)| player_index)
+            let winning_player_indices = participating_player_indices.iter()
+                .filter(|&player_index| &player_hand_ranks[*player_index] == highest_hand_rank)
+                .map(|&player_index| player_index)
                 .collect::<Vec<_>>();
 
             for player_index in participating_player_indices {
