@@ -316,8 +316,6 @@ impl GameState for NLTHGameState {
                 return 0;
             }).collect::<Vec<_>>();
 
-            println!("participating_player_hand_ranks: {:?}", player_hand_ranks);
-
             let highest_hand_rank = player_hand_ranks.iter().max().unwrap();
             // Grab the index of the players with the highest rank. This way we account for ties
             let winning_player_indices = participating_player_indices.iter()
