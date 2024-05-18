@@ -316,12 +316,11 @@ impl GameState for NLTHGameState {
                 return None;
             }).collect::<Vec<_>>();
 
-            let highest_hand_rank = participating_player_hand_ranks.iter().sorted().rev().next().unwrap();
+            let highest_hand_rank = participating_player_hand_ranks.iter().max().unwrap();
             // Grab the index of the players with the highest rank. This way we account for ties
-            let winning_player_indices = participating_player_hand_ranks.iter()
-                .enumerate()
-                .filter(|(_, rank)| rank == &highest_hand_rank)
-                .map(|(index, _)| index)
+            let winning_player_indices = participating_player_indices.iter().enumerate()
+                .filter(|(_, &player_index)| &participating_player_hand_ranks[player_index] == highest_hand_rank)
+                .map(|(_, &player_index)| player_index)
                 .collect::<Vec<_>>();
 
             for player_index in participating_player_indices {
