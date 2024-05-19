@@ -9,25 +9,25 @@ lazy_static! {
 
     pub static ref PREDEFINED_ACTION_ID_TO_ACTION_WITH_RAISE: HashMap<ActionIdentifier, Action> = {
         let mut result = HashMap::new();
-        result.insert(52, Action { action_type: ActionType::Fold, raise_amount: 0 });
-        result.insert(53, Action { action_type: ActionType::Call, raise_amount: 0 });
-        result.insert(54, Action { action_type: ActionType::Bet, raise_amount: 0 });
-        result.insert(55, Action { action_type: ActionType::Bet, raise_amount: 25 });
-        result.insert(56, Action { action_type: ActionType::Bet, raise_amount: 50 });
-        result.insert(57, Action { action_type: ActionType::Bet, raise_amount: 75 });
-        result.insert(65, Action { action_type: ActionType::Bet, raise_amount: 80 });
-        result.insert(58, Action { action_type: ActionType::Bet, raise_amount: 100 });
-        result.insert(59, Action { action_type: ActionType::Bet, raise_amount: 134 });
-        result.insert(60, Action { action_type: ActionType::Bet, raise_amount: 150 });
-        result.insert(61, Action { action_type: ActionType::Bet, raise_amount: 200 });
-        result.insert(62, Action { action_type: ActionType::Bet, raise_amount: 400 });
-        result.insert(63, Action { action_type: ActionType::Bet, raise_amount: 700 });
-        result.insert(64, Action { action_type: ActionType::Bet, raise_amount: 800 });
-        result.insert(66, Action { action_type: ActionType::Bet, raise_amount: 1000 });
-        result.insert(67, Action { action_type: ActionType::Bet, raise_amount: 1300 });
-        result.insert(68, Action { action_type: ActionType::Bet, raise_amount: 1500 });
-        result.insert(69, Action { action_type: ActionType::Bet, raise_amount: 2500 });
-        result.insert(70, Action { action_type: ActionType::AllIn, raise_amount: 0 });
+        result.insert(0, Action { action_type: ActionType::Fold, raise_amount: 0 });
+        result.insert(1, Action { action_type: ActionType::Call, raise_amount: 0 });
+        result.insert(2, Action { action_type: ActionType::AllIn, raise_amount: 0 });
+        result.insert(3, Action { action_type: ActionType::Bet, raise_amount: 0 });
+        result.insert(4, Action { action_type: ActionType::Bet, raise_amount: 25 });
+        result.insert(5, Action { action_type: ActionType::Bet, raise_amount: 50 });
+        result.insert(6, Action { action_type: ActionType::Bet, raise_amount: 75 });
+        result.insert(7, Action { action_type: ActionType::Bet, raise_amount: 80 });
+        result.insert(8, Action { action_type: ActionType::Bet, raise_amount: 100 });
+        result.insert(9, Action { action_type: ActionType::Bet, raise_amount: 134 });
+        result.insert(10, Action { action_type: ActionType::Bet, raise_amount: 150 });
+        result.insert(11, Action { action_type: ActionType::Bet, raise_amount: 200 });
+        result.insert(12, Action { action_type: ActionType::Bet, raise_amount: 400 });
+        result.insert(13, Action { action_type: ActionType::Bet, raise_amount: 700 });
+        result.insert(14, Action { action_type: ActionType::Bet, raise_amount: 800 });
+        result.insert(15, Action { action_type: ActionType::Bet, raise_amount: 1000 });
+        result.insert(16, Action { action_type: ActionType::Bet, raise_amount: 1300 });
+        result.insert(17, Action { action_type: ActionType::Bet, raise_amount: 1500 });
+        result.insert(18, Action { action_type: ActionType::Bet, raise_amount: 2500 });
 
         return result;
     };
